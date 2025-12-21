@@ -71,7 +71,7 @@ const App = () => {
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
 
   const [modalState, setModalState] = useState<{
-    type: 'none' | 'createAccount' | 'transfer' | 'loan' | 'deposit' | 'withdraw';
+    type: 'none' | 'createAccount' | 'transfer' | 'loan' | 'deposit' | 'withdraw' | 'addSharedUser' | 'removeSharedUser' | 'deleteAccount';
     isOpen: boolean;
   }>({ type: 'none', isOpen: false });
 
@@ -82,7 +82,8 @@ const App = () => {
     loanAmount: '',
     loanInstallments: 6,
     depositAmount: '',
-    withdrawAmount: ''
+    withdrawAmount: '',
+    targetId: ''
   });
 
   useNuiEvent('setVisible', (event: boolean) => {
@@ -138,6 +139,9 @@ const App = () => {
       case 'withdraw': setModalState({ type: 'withdraw', isOpen: true }); break;
       case 'transfer': setModalState({ type: 'transfer', isOpen: true }); break;
       case 'createAccount': setModalState({ type: 'createAccount', isOpen: true }); break;
+      case 'addSharedUser': setModalState({ type: 'addSharedUser', isOpen: true }); break;
+      case 'removeSharedUser': setModalState({ type: 'removeSharedUser', isOpen: true }); break;
+      case 'deleteAccount': setModalState({ type: 'deleteAccount', isOpen: true }); break;
     }
   };
 
@@ -171,6 +175,18 @@ const App = () => {
         installments: parseInt(formData.loanInstallments.toString())
       });
     }
+    else if (type === 'addSharedUser') {
+      if (!selectedAccount || !formData.targetId) return toast.error('ID de usuario requerido');
+      fetchNui('addSharedUser', { accountId: selectedAccount.id, targetId: parseInt(formData.targetId) });
+    }
+    else if (type === 'removeSharedUser') {
+      if (!selectedAccount || !formData.targetId) return toast.error('ID de usuario requerido');
+      fetchNui('removeSharedUser', { accountId: selectedAccount.id, targetId: parseInt(formData.targetId) });
+    }
+    else if (type === 'deleteAccount') {
+      if (!selectedAccount) return toast.error('Cuenta no seleccionada');
+      fetchNui('deleteAccount', { accountId: selectedAccount.id });
+    }
 
     setFormData({
       accountName: '',
@@ -179,7 +195,8 @@ const App = () => {
       loanAmount: '',
       loanInstallments: 6,
       depositAmount: '',
-      withdrawAmount: ''
+      withdrawAmount: '',
+      targetId: ''
     });
     setModalState({ type: 'none', isOpen: false });
   };
@@ -298,6 +315,9 @@ const App = () => {
               {modalState.type === 'transfer' && 'Transferir Dinero'}
               {modalState.type === 'createAccount' && 'Nueva Cuenta'}
               {modalState.type === 'loan' && 'Solicitar Préstamo'}
+              {modalState.type === 'addSharedUser' && 'Añadir Usuario Compartido'}
+              {modalState.type === 'removeSharedUser' && 'Eliminar Usuario Compartido'}
+              {modalState.type === 'deleteAccount' && 'Eliminar Cuenta'}
             </h3>
 
             <div className="space-y-4">
@@ -340,6 +360,22 @@ const App = () => {
                 />
               )}
 
+              {(modalState.type === 'addSharedUser' || modalState.type === 'removeSharedUser') && (
+                <input
+                  type="number"
+                  placeholder="ID del Usuario"
+                  value={formData.targetId}
+                  onChange={e => setFormData({ ...formData, targetId: e.target.value })}
+                  className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white focus:border-indigo-500 outline-none"
+                />
+              )}
+
+              {modalState.type === 'deleteAccount' && (
+                <p className="text-red-400">
+                  ¿Estás seguro de que deseas eliminar esta cuenta? Esta acción no se puede deshacer y se perderán todos los fondos.
+                </p>
+              )}
+
               {modalState.type === 'loan' && (
                 <div>
                   <label className="text-sm text-gray-400 mb-2 block">Cuotas: {formData.loanInstallments}</label>
@@ -363,9 +399,9 @@ const App = () => {
                 </button>
                 <button
                   onClick={submitAction}
-                  className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors font-medium"
+                  className={`flex-1 py-3 rounded-xl text-white transition-colors font-medium ${modalState.type === 'deleteAccount' ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
                 >
-                  Confirmar
+                  {modalState.type === 'deleteAccount' ? 'Eliminar' : 'Confirmar'}
                 </button>
               </div>
             </div>

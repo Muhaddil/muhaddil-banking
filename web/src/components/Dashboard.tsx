@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
-import { ArrowUpRight, ArrowDownLeft, Plus, Wallet, Send } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Plus, Wallet, Send, UserPlus, UserMinus, Trash2 } from 'lucide-react';
 
 interface Account {
     id: number;
@@ -41,6 +41,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
 
     if (!selectedAccount) return null;
+
+    const isOwner = accounts.some(acc => acc.id === selectedAccount.id);
 
     return (
         <div className="space-y-6 animate-in">
@@ -84,6 +86,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             Transferir
                         </Button>
                     </div>
+
+                    {isOwner && (
+                        <div className="flex gap-4 mt-4 pt-4 border-t border-white/10">
+                            <Button
+                                onClick={() => onAction('addSharedUser')}
+                                className="bg-indigo-800/30 text-indigo-200 hover:bg-indigo-800/50 border border-white/5"
+                                icon={<UserPlus size={18} />}
+                            >
+                                Añadir Usuario
+                            </Button>
+                            <Button
+                                onClick={() => onAction('removeSharedUser')}
+                                className="bg-indigo-800/30 text-indigo-200 hover:bg-indigo-800/50 border border-white/5"
+                                icon={<UserMinus size={18} />}
+                            >
+                                Eliminar Usuario
+                            </Button>
+                            <Button
+                                onClick={() => onAction('deleteAccount')}
+                                className="bg-red-500/20 text-red-200 hover:bg-red-500/30 border border-red-500/20 ml-auto"
+                                icon={<Trash2 size={18} />}
+                            >
+                                Eliminar Cuenta
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
 

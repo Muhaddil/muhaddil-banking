@@ -342,6 +342,10 @@ RegisterNetEvent('muhaddil_bank:removeSharedUser', function(accountId, targetId)
         return Notify(src, 'error', 'Jugador no encontrado')
     end
     
+    if targetIdentifier == identifier then
+        return Notify(src, 'error', 'No puedes quitarte a ti mismo')
+    end
+
     -- Remover usuario compartido
     MySQL.query.await('DELETE FROM bank_shared_access WHERE account_id = ? AND user_identifier = ?', {
         accountId, targetIdentifier
