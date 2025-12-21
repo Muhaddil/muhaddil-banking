@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-primary: 10 10 12;
+    --bg-secondary: 18 18 23;
+    --bg-card: 23 23 29;
+
+    --accent-primary: 99 102 241;
+    --accent-secondary: 168 85 247;
+    --accent-glow: 139 92 246;
+
+    --text-primary: 255 255 255;
+    --text-secondary: 148 163 184;
+    --text-muted: 100 116 139;
+
+    --success: 16 185 129;
+    --danger: 239 68 68;
+    --warning: 245 158 11;
+  }
+
+  body {
+    background-color: transparent;
+    color: rgb(var(--text-primary));
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(var(--accent-primary), 0.3);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--accent-primary), 0.5);
+  }
+}
+
+@layer components {
+  .glass-panel {
+    background: rgba(23, 23, 29, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  .glass-button {
+    background: linear-gradient(135deg, rgba(var(--accent-primary), 0.8), rgba(var(--accent-secondary), 0.8));
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .glass-button:hover {
+    background: linear-gradient(135deg, rgba(var(--accent-primary), 1), rgba(var(--accent-secondary), 1));
+    box-shadow: 0 0 15px rgba(var(--accent-glow), 0.5);
+    transform: translateY(-1px);
+  }
+
+  .input-field {
+    background: rgba(10, 10, 12, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    transition: all 0.2s;
+  }
+
+  .input-field:focus {
+    border-color: rgba(var(--accent-primary), 0.5);
+    box-shadow: 0 0 0 2px rgba(var(--accent-primary), 0.2);
+    outline: none;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-image: linear-gradient(to right, rgb(var(--accent-primary)), rgb(var(--accent-secondary)));
+  }
+
+  .animate-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

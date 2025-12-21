@@ -1,0 +1,23 @@
+# Node modules
+node_modules/
+web/node_modules/
+
+# Environment
+.env
+.env.local
+features
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
