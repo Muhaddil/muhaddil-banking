@@ -23,6 +23,7 @@ server_script {
 files {
     'web/build/index.html',
     'web/build/**/*',
+    'locales/*.json'
 }
 
 dependencies {

@@ -1,0 +1,229 @@
+{
+  "sidebar": {
+    "bankName": "Banco",
+    "bankSubtitle": "Nacional",
+    "accounts": "Cuentas",
+    "cards": "Tarjetas",
+    "transactions": "Transacciones",
+    "loans": "Préstamos",
+    "stats": "Estadísticas",
+    "banks": "Mis Bancos",
+    "close": "Cerrar"
+  },
+  "dashboard": {
+    "welcome": "¡Bienvenido al Banco!",
+    "noAccounts": "Aún no tienes cuentas bancarias. Crea tu primera cuenta para comenzar a administrar tus finanzas.",
+    "createFirstAccount": "Crear Mi Primera Cuenta",
+    "totalBalance": "Balance Total",
+    "selectedAccountBalance": "Balance de la Cuenta Seleccionada",
+    "yourAccounts": "Tus Cuentas",
+    "sharedAccounts": "Cuentas Compartidas",
+    "shared": "Compartida",
+    "newAccount": "Nueva Cuenta",
+    "maxAccountsReached": "Has alcanzado el límite de {max} cuentas",
+    "bankInfo": {
+      "associated": "Banco Asociado",
+      "commission": "Tasa de Comisión",
+      "bankType": "Tipo de Banco",
+      "bankTypes": {
+        "state": "Estado",
+        "private": "Privado"
+      },
+      "accountType": "Tipo de Cuenta",
+      "owner": "Propietario",
+      "shared": "Compartida"
+    },
+    "feeCalculator": {
+      "title": "Comisiones por Transacción",
+      "deposit": "Depósito",
+      "withdraw": "Retiro",
+      "transfer": "Transferencia",
+      "disclaimer": "Algunas de estas comisiones pueden no aplicarse dependiendo del banco, la cuenta o el tipo de operación."
+    },
+    "actions": {
+      "addUser": "Añadir Usuario",
+      "removeUser": "Eliminar Usuario",
+      "deleteAccount": "Eliminar Cuenta"
+    }
+  },
+  "quickActions": {
+    "deposit": "Depositar",
+    "withdraw": "Retirar",
+    "transfer": "Transferir",
+    "newAccount": "Nueva Cuenta"
+  },
+  "transactions": {
+    "search": "Buscar transacciones...",
+    "all": "Todas",
+    "income": "Ingresos",
+    "expenses": "Gastos",
+    "history": "Historial de Transacciones",
+    "count": "{count} transacciones",
+    "noResults": "No se encontraron transacciones",
+    "noTransactions": "No hay transacciones recientes"
+  },
+  "loans": {
+    "title": "Préstamos",
+    "subtitle": "Gestiona tus créditos y solicita financiamiento",
+    "requestLoan": "Solicitar Préstamo",
+    "noLoans": "No tienes préstamos activos",
+    "noLoansDesc": "¿Necesitas dinero extra para tus proyectos? Solicita un préstamo con tasas competitivas.",
+    "requestNow": "Solicitar ahora",
+    "loanId": "Préstamo #{id}",
+    "active": "Activo",
+    "originalAmount": "Monto Original",
+    "interest": "Interés",
+    "installments": "Cuotas",
+    "date": "Fecha",
+    "remaining": "Restante a pagar",
+    "paid": "pagado",
+    "payInstallment": "Pagar Cuota"
+  },
+  "stats": {
+    "currentBalance": "Balance Actual",
+    "totalIncome": "Ingresos Totales",
+    "totalExpenses": "Gastos Totales",
+    "netFlow": "Flujo Neto",
+    "financialActivity": "Actividad Financiera",
+    "last7Days": "Últimos 7 días",
+    "noData": "No hay datos suficientes para mostrar estadísticas",
+    "income": "Ingresos",
+    "expenses": "Gastos"
+  },
+  "banks": {
+    "bankManagement": "Gestión de Bancos",
+    "manageDescription": "Administra tus sucursales bancarias, ajusta las comisiones y maximiza tus ingresos pasivos.",
+    "specialPrice": "Precio Especial",
+    "perBank": "por banco",
+    "commissions": "Comisiones 0.5-3%",
+    "passiveIncome": "Ingresos pasivos",
+    "fullManagement": "Gestión completa",
+    "availableBanks": "Bancos Disponibles",
+    "purchaseDescription": "Compra un banco y comienza a generar ingresos pasivos",
+    "available": "Disponible ahora",
+    "price": "Precio",
+    "buy": "Comprar",
+    "myBranches": "Mis Sucursales",
+    "noBranches": "No posees ninguna sucursal bancaria",
+    "startDescription": "Comienza a generar ingresos pasivos comprando tu primera sucursal bancaria",
+    "acquiredOn": "Adquirido el",
+    "commission": "Comisión",
+    "totalEarned": "Total Ganado",
+    "pending": "Pendiente",
+    "withdrawEarnings": "Retirar Ganancias",
+    "changeCommission": "Cambiar Comisión",
+    "rename": "Renombrar",
+    "transfer": "Transferir",
+    "sell": "Vender (50%)",
+    "transferBank": "Transferir Banco",
+    "renameBank": "Renombrar Banco",
+    "sellBank": "Vender Banco",
+    "sellConfirmation": "¿Estás seguro de que quieres vender este banco? Recibirás el 50% del precio de compra más tus ganancias pendientes.",
+    "bankName": "Nombre del Banco",
+    "pendingEarnings": "Ganancias Pendientes",
+    "confirmSell": "Confirmar Venta",
+    "transferDescription": "Transfiere \"{{bankName}}\" a otro jugador",
+    "playerIdPlaceholder": "ID del jugador (ej: 1, 2, 3...)",
+    "commissionDescription": "Establece la tasa de comisión (0.5% - 3%)",
+    "renameDescription": "Cambia el nombre de tu banco",
+    "newNamePlaceholder": "Nuevo nombre del banco",
+    "updateCommission": "Actualizar Comisión",
+    "invalidPlayerId": "ID de jugador inválido",
+    "commissionRangeError": "La comisión debe estar entre 0.5% y 3%",
+    "nameLengthError": "El nombre debe tener al menos 3 caracteres"
+  },
+  "atm": {
+    "title": "CAJERO ATM",
+    "secureAccess": "Acceso Seguro",
+    "enterPin": "Introduce tu PIN de 4 dígitos",
+    "pressEsc": "Presiona ESC para salir",
+    "card": "Tarjeta",
+    "terminal": "Terminal Bancario",
+    "selectedAccount": "Cuenta Seleccionada",
+    "availableBalance": "Saldo Disponible",
+    "cash": "Efectivo",
+    "deposit": "Depositar",
+    "withdraw": "Retirar",
+    "transfer": "Transferir",
+    "depositMoney": "Depositar Dinero",
+    "withdrawMoney": "Retirar Dinero",
+    "transferMoney": "Transferir Dinero",
+    "targetAccount": "Cuenta Destino",
+    "selectAccount": "Seleccionar cuenta..."
+  },
+  "cards": {
+    "title": "Mis Tarjetas",
+    "description": "Gestiona tus tarjetas de débito y seguridad",
+    "newCard": "Nueva Tarjeta",
+    "blocked": "Bloqueada",
+    "active": "Activa",
+    "cardNumber": "NÚMERO DE TARJETA",
+    "linkedAccount": "Cuenta Vinculada",
+    "unblock": "Desbloquear",
+    "block": "Bloquear",
+    "changePin": "Cambiar PIN",
+    "delete": "Eliminar",
+    "noCards": "No tienes tarjetas activas",
+    "createCardMessage": "Crea una nueva tarjeta para acceder a los cajeros automáticos",
+    "confirmDelete": "Confirmar eliminación",
+    "deleteConfirmation": "¿Estás seguro de que deseas eliminar esta tarjeta? Esta acción no se puede deshacer.",
+    "cancel": "Cancelar",
+    "selectAccount": "Seleccionar cuenta...",
+    "securityPin": "PIN de Seguridad (4 dígitos)",
+    "issuanceCost": "Coste de emisión",
+    "pinReminder": "Asegúrate de memorizar tu PIN, lo necesitarás en los cajeros.",
+    "requestCard": "Solicitar Tarjeta",
+    "currentPin": "PIN Actual",
+    "newPin": "Nuevo PIN",
+    "confirmPin": "Confirmar",
+    "updatePin": "Actualizar PIN",
+    "selectAccountError": "Selecciona una cuenta",
+    "pinError": "El PIN debe ser de 4 dígitos numéricos",
+    "pinMatchError": "Los PINs nuevos no coinciden",
+    "createError": "Error al crear tarjeta",
+    "blockError": "Error al cambiar estado",
+    "changePinError": "Error al cambiar PIN",
+    "deleteError": "Error al eliminar tarjeta"
+  },
+  "modals": {
+    "deposit": {
+      "title": "Depositar Dinero"
+    },
+    "withdraw": {
+      "title": "Retirar Dinero"
+    },
+    "transfer": {
+      "title": "Transferir Dinero",
+      "toAccount": "ID Cuenta Destino"
+    },
+    "createAccount": {
+      "title": "Nueva Cuenta",
+      "placeholder": "Nombre de la cuenta"
+    },
+    "loan": {
+      "title": "Solicitar Préstamo",
+      "installments": "Cuotas"
+    },
+    "addSharedUser": {
+      "title": "Añadir Usuario Compartido"
+    },
+    "removeSharedUser": {
+      "title": "Eliminar Usuario Compartido"
+    },
+    "deleteAccount": {
+      "title": "Eliminar Cuenta",
+      "confirm": "¿Estás seguro de que deseas eliminar esta cuenta? Esta acción no se puede deshacer y se perderán todos los fondos."
+    },
+    "common": {
+      "amount": "Monto",
+      "userId": "ID del Usuario",
+      "verifyingAccess": "Verificando acceso..."
+    }
+  },
+  "common": {
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "free": "Gratis"
+  }
+}

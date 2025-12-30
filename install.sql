@@ -1,4 +1,3 @@
--- Muhaddil Bank System - Database Installation
 -- Execute this file to manually create all required tables
 
 -- Table: bank_accounts
@@ -55,5 +54,23 @@ CREATE TABLE IF NOT EXISTS `bank_ownership` (
     `commission_rate` DECIMAL(5,4) DEFAULT 0.0100,
     `total_earned` DECIMAL(20,2) DEFAULT 0.00,
     `purchased_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `for_sale` TINYINT(1) DEFAULT 0,
+    `sale_price` DECIMAL(20,2) DEFAULT 0.00,
+    `pending_earnings` DECIMAL(20,2) DEFAULT 0.00,
     INDEX(`owner`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Table: bank_cards
+CREATE TABLE IF NOT EXISTS `bank_cards` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `account_id` INT NOT NULL,
+    `owner` VARCHAR(50) NOT NULL,
+    `card_number` VARCHAR(20) NOT NULL,
+    `pin` VARCHAR(4) NOT NULL,
+    `is_blocked` TINYINT(1) DEFAULT 0,
+    `failed_attempts` INT DEFAULT 0,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`account_id`) REFERENCES `bank_accounts`(`id`) ON DELETE CASCADE,
+    INDEX(`owner`),
+    INDEX(`card_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

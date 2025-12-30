@@ -5,6 +5,7 @@ Este documento describe funcionalidades adicionales y mejoras que puedes impleme
 ## ✅ Funcionalidades Implementadas
 
 ### 💳 Sistema de Cuentas
+
 - ✅ Crear hasta 5 cuentas por jugador
 - ✅ Eliminar cuentas
 - ✅ Ver balance en tiempo real
@@ -14,6 +15,7 @@ Este documento describe funcionalidades adicionales y mejoras que puedes impleme
 - ✅ Transferencias entre cuentas
 
 ### 💰 Sistema de Préstamos
+
 - ✅ Solicitar préstamos de $1,000 a $500,000
 - ✅ Interés del 5%
 - ✅ Hasta 12 cuotas
@@ -21,18 +23,21 @@ Este documento describe funcionalidades adicionales y mejoras que puedes impleme
 - ✅ Tracking de préstamos activos
 
 ### 🏦 Propiedad de Bancos
+
 - ✅ Comprar bancos por $1,000,000
 - ✅ Comisiones del 1% por transacción
 - ✅ Hasta 3 bancos por jugador
 - ✅ Tracking de ganancias
 
 ### 📊 Estadísticas
+
 - ✅ Gráficos de ingresos/gastos
 - ✅ Historial de transacciones
 - ✅ Balance total por cuenta
 - ✅ Actividad de últimos 7 días
 
 ### 🎨 Interfaz
+
 - ✅ Diseño minimalista dark mode
 - ✅ Animaciones suaves
 - ✅ Responsive
@@ -41,10 +46,10 @@ Este documento describe funcionalidades adicionales y mejoras que puedes impleme
 ## 🚀 Mejoras Sugeridas
 
 ### 1. Sistema de Tarjetas
+
 Implementa tarjetas de débito/crédito:
 
 ```lua
--- En config.lua
 Config.Cards = {
     Enabled = true,
     DebitCardPrice = 500,
@@ -55,15 +60,16 @@ Config.Cards = {
 ```
 
 **Beneficios:**
+
 - Límites de gasto diarios
 - Tarjetas físicas como items
 - Diferentes niveles (Basic, Gold, Platinum)
 
 ### 2. Sistema de Intereses
+
 Añade intereses a cuentas de ahorro:
 
 ```lua
--- En config.lua
 Config.Interest = {
     Enabled = true,
     Rate = 0.001, -- 0.1% diario
@@ -73,11 +79,13 @@ Config.Interest = {
 ```
 
 **Cómo funciona:**
+
 - Cuentas con balance mínimo generan interés
 - Se calcula y aplica cada 24 horas
 - Diferentes tasas según el tipo de cuenta
 
 ### 3. Cajeros Automáticos (ATMs)
+
 Añade cajeros por el mapa:
 
 ```lua
@@ -95,11 +103,13 @@ Config.ATMs = {
 ```
 
 **Funcionalidades:**
+
 - Retiros rápidos sin ir al banco
 - Comisión por uso
 - Límite de retiro por transacción
 
 ### 4. Historial Detallado
+
 Mejora el sistema de transacciones:
 
 ```lua
@@ -111,12 +121,14 @@ ALTER TABLE bank_transactions ADD COLUMN ip_address VARCHAR(50);
 ```
 
 **Información adicional:**
+
 - Ubicación de la transacción
 - Cuenta origen y destino
 - Registro de IP (para seguridad)
 - Geolocalización
 
 ### 5. Sistema de Cheques
+
 Implementa cheques físicos:
 
 ```lua
@@ -131,12 +143,14 @@ Config.Checks = {
 ```
 
 **Cómo funciona:**
+
 - Jugadores pueden crear cheques
 - Los cheques son items transferibles
 - Se pueden cobrar en cualquier banco
 - Expiran después de X días
 
 ### 6. Cuentas Empresariales
+
 Cuentas para organizaciones:
 
 ```lua
@@ -151,12 +165,14 @@ Config.BusinessAccounts = {
 ```
 
 **Características:**
+
 - Múltiples usuarios con diferentes permisos
 - Mayor límite de balance
 - Mejores tasas de interés
 - Logs de auditoría
 
 ### 7. Sistema de Inversiones
+
 Permite invertir dinero:
 
 ```lua
@@ -174,12 +190,14 @@ Config.Investments = {
 ```
 
 **Tipos de inversión:**
+
 - Bajo riesgo (1-3% retorno)
 - Medio riesgo (3-8% retorno)
 - Alto riesgo (5-20% retorno)
 - Período de bloqueo
 
 ### 8. Alertas y Notificaciones
+
 Sistema de notificaciones push:
 
 ```lua
@@ -194,12 +212,14 @@ Config.Alerts = {
 ```
 
 **Tipos de alertas:**
+
 - Balance bajo
 - Transacciones grandes
 - Actividad sospechosa
 - Reporte diario
 
 ### 9. Límites de Seguridad
+
 Protección contra exploits:
 
 ```lua
@@ -214,12 +234,14 @@ Config.Security = {
 ```
 
 **Medidas de seguridad:**
+
 - Límite de transferencias diarias
 - Cooldown entre transacciones
 - Confirmación para grandes montos
 - Logs de seguridad
 
 ### 10. Sistema de Niveles VIP
+
 Beneficios para usuarios premium:
 
 ```lua
@@ -247,6 +269,7 @@ Config.VIP = {
 ```
 
 **Beneficios VIP:**
+
 - Más cuentas disponibles
 - Mejores tasas de interés
 - Descuentos en comisiones
@@ -255,16 +278,19 @@ Config.VIP = {
 ## 🎯 Roadmap de Desarrollo
 
 ### Corto Plazo (1-2 semanas)
+
 - [ ] Sistema de ATMs
 - [ ] Tarjetas de débito
 - [ ] Límites de seguridad mejorados
 
 ### Medio Plazo (1 mes)
+
 - [ ] Sistema de intereses
 - [ ] Cuentas empresariales
 - [ ] Cheques físicos
 
 ### Largo Plazo (2-3 meses)
+
 - [ ] Sistema de inversiones
 - [ ] Alertas y notificaciones
 - [ ] Sistema VIP completo
@@ -273,32 +299,42 @@ Config.VIP = {
 ## 💡 Ideas Creativas
 
 ### App de Banca Móvil
+
 Crea un item "teléfono" que permita:
+
 - Ver balance
 - Hacer transferencias
 - Pagar préstamos
 - Revisar transacciones
 
 ### Sistema de Seguros
+
 Asegura tus cuentas contra robos:
+
 - Pago mensual
 - Recuperación de fondos robados
 - Diferentes niveles de cobertura
 
 ### Broker de Acciones
+
 Implementa un mercado de acciones:
+
 - Comprar/vender acciones de empresas ficticias
 - Precios fluctuantes
 - Dividendos mensuales
 
 ### Sistema de Donaciones
+
 Permite donaciones entre jugadores:
+
 - Recibos de donación
 - Tracking de donaciones
 - Sistema de impuestos
 
 ### Intercambio de Divisas
+
 Implementa diferentes monedas:
+
 - Dólar, Euro, Crypto
 - Tasas de cambio en tiempo real
 - Comisiones por cambio

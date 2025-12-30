@@ -1,100 +1,181 @@
 Config = {}
 
-Config.FrameWork = 'auto' -- Select the framework being used: 'esx' for ESX Framework or 'qb' for QBCore Framework.
-Config.ESXVer = 'new'-- Select ESX version, 'new' or 'old'
-
--- Comandos
+Config.FrameWork = "auto" -- auto, esx, qb
+Config.ESXVer = "new"     -- new, old
 Config.OpenCommand = "banco"
+Config.Locale = 'es'
 
--- Sistema de préstamos
-Config.Loans = {
-    MinAmount = 1000,
-    MaxAmount = 500000,
-    InterestRate = 0.05, -- 5%
-    MaxInstallments = 12,
-    MinCreditScore = 50
+Config.AllowedGroups = {
+    qb = { "admin", "god" },         -- QBCore roles
+    esx = { "admin", "superadmin" }, -- ESX groups
+    ace = { "banking_system" }       -- ACE permissions
 }
 
--- Sistema de bancos privados
-Config.BankOwnership = {
-    Enabled = true,
-    PurchasePrice = 1000000,
-    CommissionRate = 0.01, -- 1% de cada transacción
-    MaxBanksPerPlayer = 3
-}
-
--- Límites de cuentas
-Config.Accounts = {
-    MaxPerPlayer = 5,
-    MaxSharedUsers = 5,
-    InitialBalance = 0
-}
-
--- Transacciones
-Config.Transactions = {
-    MinTransfer = 1,
-    MaxTransfer = 999999999,
-    TransferFee = 0, -- 0% por defecto, el owner del banco puede cobrarlo
-}
-
--- Ubicaciones de bancos (puedes añadir más)
+-- Bank Locations
 Config.BankLocations = {
-    {name = "Banco Central", coords = vector3(149.46, -1040.53, 29.37), blip = true},
-    {name = "Paleto Bay Bank", coords = vector3(-112.20, 6469.91, 31.63), blip = true},
-    {name = "Great Ocean Highway", coords = vector3(-1212.98, -330.84, 37.79), blip = true},
-    {name = "Pacific Standard Bank", coords = vector3(241.72, 227.97, 106.29), blip = true}
-}
-
--- Blips
-Config.Blip = {
-    Sprite = 108,
-    Color = 2,
-    Scale = 0.8,
-    Label = "Banco"
-}
-
--- Sistema de seguridad
-Config.Security = {
-    MaxDailyTransfers = 50,              -- Máximo de transferencias por día
-    MaxTransferAmount = 1000000,         -- Máximo por transferencia
-    CooldownBetweenTransfers = 1,        -- Segundos entre transferencias
-    RequireConfirmation = true,          -- Requiere confirmación para montos grandes
-    LogAllTransactions = true            -- Registrar todas las transacciones
-}
-
--- Sistema de ATMs (Cajeros Automáticos) - OPCIONAL
-Config.ATMs = {
-    Enabled = false,                     -- Deshabilitado por defecto
-    WithdrawLimit = 5000,                -- Límite de retiro por transacción
-    Fee = 10,                            -- Comisión por uso
-    Locations = {
-        -- Añade coordenadas de ATMs aquí cuando lo habilites
-        -- vector3(147.44, -1035.77, 29.34),
-        -- vector3(-1205.02, -324.28, 37.86),
+    {
+        id = "bank_legion",
+        name = "Banco Legion Square",
+        coords = vector3(149.46, -1040.53, 29.37),
+        useped = true,
+        pedcoords = vector4(149.4139, -1042.1110, 29.3680, 336.3652),
+        pedmodel = "ig_bankman",
+        blip = true,
+        purchasable = true
+    },
+    {
+        id = "bank_del_perro",
+        name = "Del Perro Boulevard",
+        coords = vector3(-1212.74, -330.48, 37.79),
+        useped = true,
+        pedcoords = vector4(-1211.95, -332.07, 37.78, 28.65),
+        pedmodel = "ig_bankman",
+        blip = true,
+        purchasable = true
+    },
+    {
+        id = "bank_hawick",
+        name = "Banco Hawick Avenue",
+        coords = vector3(-350.77, -49.57, 49.04),
+        useped = true,
+        pedcoords = vector4(-351.31, -51.31, 49.04, 337.81),
+        pedmodel = "ig_bankman",
+        blip = true,
+        purchasable = true
+    },
+    {
+        id = "bank_alta",
+        name = "Banco Alta Street",
+        coords = vector3(314.39, -278.81, 54.17),
+        useped = true,
+        pedcoords = vector4(313.8434, -280.4339, 54.1646, 339.3568),
+        pedmodel = "ig_bankman",
+        blip = true,
+        purchasable = true
+    },
+    {
+        id = "bank_sandy",
+        name = "Banco Sandy Shores",
+        coords = vector3(1174.94, 2706.42, 38.09),
+        useped = true,
+        pedcoords = vector4(1174.96, 2708.20, 38.09, 179.74),
+        pedmodel = "ig_bankman",
+        blip = true,
+        purchasable = true
+    },
+    {
+        id = "bank_pacific",
+        name = "Pacific Standard Bank",
+        coords = vector3(243.05, 224.29, 106.29),
+        useped = true,
+        pedcoords = vector4(243.70, 226.30, 106.29, 162.98),
+        pedmodel = "ig_bankman",
+        blip = true,
+        purchasable = false
+    },
+    {
+        id = "bank_great_ocean",
+        name = "Banco Great Ocean Highway",
+        coords = vector3(-2963.14, 482.95, 15.70),
+        useped = true,
+        pedcoords = vector4(-2960.97, 482.91, 15.70, 88.16),
+        pedmodel = "ig_bankman",
+        blip = true,
+        purchasable = true
+    },
+    {
+        id = "bank_paleto",
+        name = "Banco Paleto Bay",
+        coords = vector3(-112.2633, 6468.7690, 31.6267),
+        useped = true,
+        pedcoords = vector4(-111.2205, 6470.1367, 31.6267, 132.3241),
+        pedmodel = "ig_bankman",
+        blip = true,
+        purchasable = true
     }
 }
 
--- Sistema de Tarjetas - OPCIONAL
+Config.Blip = {
+    Sprite = 108,
+    Scale = 0.8,
+    Color = 2
+}
+
+-- Account Settings
+Config.Accounts = {
+    MaxPerPlayer = 5,
+    InitialBalance = 0, -- Initial balance for new accounts
+    MaxSharedUsers = 5
+}
+
+-- Loan Settings
+Config.Loans = {
+    MinAmount = 1000,
+    MaxAmount = 100000,
+    InterestRate = 0.10, -- 10%
+    MaxInstallments = 24
+}
+
+-- Bank Ownership Settings
+Config.BankOwnership = {
+    Enabled = true,
+    PurchasePrice = 1000000,
+    SellPercentage = 0.50,
+    MaxBanksPerPlayer = 3,
+
+    -- Commission Settings
+    DefaultCommissionRate = 0.01, -- 1%
+    MinCommissionRate = 0.005,    -- 0.5%
+    MaxCommissionRate = 0.03,     -- 3%
+
+    -- Transactions that generate commission
+    CommissionOnDeposit = false,
+    CommissionOnWithdraw = true,
+    CommissionOnTransfer = true,
+    CommissionOnLoan = false
+}
+
+-- ATM Settings
+Config.ATMs = {
+    Enabled = true,
+    Fee = 5, -- $5 per transaction
+    DepositLimit = 50000,
+    WithdrawLimit = 50000,
+    Target = true,       -- Use target?
+    TargetSystem = "ox", -- ox, qb
+    TargetDistance = 2.5,
+    TargetModels = {
+        `prop_atm_01`,
+        `prop_atm_02`,
+        `prop_atm_03`,
+        `prop_fleeca_atm`
+    },
+    Locations = { -- Manual ATM locations (TextUI) --> Disabled if using target
+        vector3(147.60, -1035.77, 29.34),
+        vector3(-1212.63, -331.52, 37.79),
+        vector3(-2962.71, 483.00, 15.70),
+        vector3(-112.44, 6470.03, 31.63),
+        vector3(1175.74, 2706.80, 38.09),
+        -- Add more here
+    }
+}
+
+Config.ATMBlip = {
+    Enabled = false, --> Disabled if using target
+    Sprite = 277,
+    Scale = 0.6,
+    Color = 2,
+    Label = "Cajero Automático"
+}
+
+-- Card Settings
 Config.Cards = {
-    Enabled = false,                     -- Deshabilitado por defecto
-    DebitCardPrice = 500,                -- Precio de tarjeta de débito
-    DailyWithdrawLimit = 10000,          -- Límite de retiro diario
-    RequireCardForATM = false            -- Requiere tarjeta para usar ATM
-}
+    Enabled = true,
+    RequireCardForATM = true, -- If true, you need a card to use ATM (it can be created in a bank)
+    DebitCardPrice = 500,
+    MaxFailedPINAttempts = 3,
 
--- Sistema de Intereses - OPCIONAL
-Config.Interest = {
-    Enabled = false,                     -- Deshabilitado por defecto
-    Rate = 0.001,                        -- 0.1% diario
-    MinBalance = 10000,                  -- Balance mínimo para generar interés
-    PaymentInterval = 86400              -- 24 horas en segundos
-}
-
--- Sistema de Cheques - OPCIONAL
-Config.Checks = {
-    Enabled = false,                     -- Deshabilitado por defecto
-    MinAmount = 100,                     -- Monto mínimo del cheque
-    MaxAmount = 100000,                  -- Monto máximo del cheque
-    ExpiryDays = 7,                      -- Días hasta que expire
-    Fee = 25                             -- Comisión por crear cheque
+    -- Theft Settings
+    CanStealCards = true,
+    StealChance = 75 -- 75% chance of success
 }

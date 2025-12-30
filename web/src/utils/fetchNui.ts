@@ -13,5 +13,13 @@ export async function fetchNui<T = any>(eventName: string, data?: any): Promise<
 
   const resp = await fetch(`https://${resourceName}/${eventName}`, options)
 
-  return await resp.json()
+  const text = await resp.text()
+  if (!text) return {} as T
+
+  try {
+    return JSON.parse(text)
+  } catch (e) {
+    console.warn(`[fetchNui] Failed to parse JSON response for ${eventName}:`, text)
+    return {} as T
+  }
 }

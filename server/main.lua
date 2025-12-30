@@ -3,7 +3,6 @@ local QBCore = nil
 local ESXVer = Config.ESXVer
 local FrameWork = nil
 
--- Inicializar Framework
 if Config.FrameWork == "auto" then
     if GetResourceState('es_extended') == 'started' then
         if ESXVer == 'new' then
@@ -38,158 +37,69 @@ else
     print('===NO SUPPORTED FRAMEWORK FOUND===')
 end
 
--- Crear tablas en la base de datos al iniciar
-MySQL.ready(function()
-    local queries = {
-        [[
-            CREATE TABLE IF NOT EXISTS `bank_accounts` (
-                `id` INT AUTO_INCREMENT PRIMARY KEY,
-                `owner` VARCHAR(50) NOT NULL,
-                `account_name` VARCHAR(100) NOT NULL,
-                `balance` DECIMAL(20,2) DEFAULT 0.00,
-                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX(`owner`)
-            )
-        ]],
-        [[
-            CREATE TABLE IF NOT EXISTS `bank_shared_access` (
-                `id` INT AUTO_INCREMENT PRIMARY KEY,
-                `account_id` INT NOT NULL,
-                `user_identifier` VARCHAR(50) NOT NULL,
-                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (`account_id`) REFERENCES `bank_accounts`(`id`) ON DELETE CASCADE,
-                INDEX(`account_id`),
-                INDEX(`user_identifier`)
-            )
-        ]],
-        [[
-            CREATE TABLE IF NOT EXISTS `bank_transactions` (
-                `id` INT AUTO_INCREMENT PRIMARY KEY,
-                `account_id` INT NOT NULL,
-                `type` VARCHAR(50) NOT NULL,
-                `amount` DECIMAL(20,2) NOT NULL,
-                `description` TEXT,
-                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (`account_id`) REFERENCES `bank_accounts`(`id`) ON DELETE CASCADE,
-                INDEX(`account_id`)
-            )
-        ]],
-        [[
-            CREATE TABLE IF NOT EXISTS `bank_loans` (
-                `id` INT AUTO_INCREMENT PRIMARY KEY,
-                `user_identifier` VARCHAR(50) NOT NULL,
-                `amount` DECIMAL(20,2) NOT NULL,
-                `remaining` DECIMAL(20,2) NOT NULL,
-                `interest_rate` DECIMAL(5,2) NOT NULL,
-                `installments` INT NOT NULL,
-                `status` VARCHAR(20) DEFAULT 'active',
-                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX(`user_identifier`)
-            )
-        ]],
-        [[
-            CREATE TABLE IF NOT EXISTS `bank_ownership` (
-                `id` INT AUTO_INCREMENT PRIMARY KEY,
-                `owner` VARCHAR(50) NOT NULL,
-                `bank_name` VARCHAR(100) NOT NULL,
-                `commission_rate` DECIMAL(5,4) DEFAULT 0.0100,
-                `total_earned` DECIMAL(20,2) DEFAULT 0.00,
-                `purchased_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX(`owner`)
-            )
-        ]]
-    }
+lib.callback.register('muhaddil_bank:getAvailableBanks', function(source)
+    local available = {}
 
-    for _, query in ipairs(queries) do
-        MySQL.query.await(query)
+    for _, bankLocation in ipairs(Config.BankLocations) do
+        if bankLocation.purchasable then
+            local owner = MySQL.scalar.await('SELECT owner FROM bank_ownership WHERE bank_id = ?', { bankLocation.id })
+
+            table.insert(available, {
+                id = bankLocation.id,
+                name = bankLocation.name,
+                coords = bankLocation.coords,
+                isOwned = owner ~= nil,
+                owner = owner,
+                price = Config.BankOwnership.PurchasePrice
+            })
+        end
     end
-    
-    print('^2[Bank System] Database initialized successfully^7')
+
+    return available
 end)
 
--- Helper: Obtener identificador del jugador
-function GetIdentifier(source)
-    if FrameWork == "esx" then
-        local xPlayer = ESX.GetPlayerFromId(source)
-        return xPlayer and xPlayer.identifier or nil
-    elseif FrameWork == "qb" then
-        local Player = QBCore.Functions.GetPlayer(source)
-        return Player and Player.PlayerData.citizenid or nil
-    end
-end
-
--- Helper: Obtener dinero del jugador
-function GetPlayerMoney(source)
-    if FrameWork == "esx" then
-        local xPlayer = ESX.GetPlayerFromId(source)
-        return xPlayer and xPlayer.getMoney() or 0
-    elseif FrameWork == "qb" then
-        local Player = QBCore.Functions.GetPlayer(source)
-        return Player and Player.PlayerData.money.cash or 0
-    end
-end
-
--- Helper: Añadir dinero al jugador
-function AddPlayerMoney(source, amount)
-    if FrameWork == "esx" then
-        local xPlayer = ESX.GetPlayerFromId(source)
-        if xPlayer then
-            xPlayer.addMoney(amount)
-            return true
-        end
-    elseif FrameWork == "qb" then
-        local Player = QBCore.Functions.GetPlayer(source)
-        if Player then
-            Player.Functions.AddMoney('cash', amount)
-            return true
-        end
-    end
-    return false
-end
-
--- Helper: Remover dinero del jugador
-function RemovePlayerMoney(source, amount)
-    if FrameWork == "esx" then
-        local xPlayer = ESX.GetPlayerFromId(source)
-        if xPlayer then
-            if xPlayer.getMoney() >= amount then
-                xPlayer.removeMoney(amount)
-                return true
-            end
-        end
-    elseif FrameWork == "qb" then
-        local Player = QBCore.Functions.GetPlayer(source)
-        if Player then
-            if Player.PlayerData.money.cash >= amount then
-                Player.Functions.RemoveMoney('cash', amount)
-                return true
-            end
-        end
-    end
-    return false
-end
-
--- Helper: Notificar al jugador
-function Notify(source, type, message)
-    TriggerClientEvent('muhaddil_bank:notify', source, type, message)
-end
-
--- Callback: Obtener todos los datos del jugador
-lib.callback.register('muhaddil_bank:getData', function(source)
-    local identifier = GetIdentifier(source)
+lib.callback.register('muhaddil_bank:getData', function(source, bankId)
+    local identifier = GetPlayerIdentifier(source)
     if not identifier then return nil end
-    
-    -- Obtener cuentas propias
-    local ownedAccounts = MySQL.query.await('SELECT * FROM bank_accounts WHERE owner = ?', {identifier})
-    
-    -- Obtener cuentas compartidas
+
+    local currentBankInfo = nil
+    if bankId and type(bankId) == 'string' then
+        local bankLocation = nil
+        for _, bank in ipairs(Config.BankLocations) do
+            if bank.id == bankId then
+                bankLocation = bank
+                break
+            end
+        end
+
+        if bankLocation then
+            local ownedBank = MySQL.single.await('SELECT commission_rate FROM bank_ownership WHERE bank_id = ?',
+                { bankId })
+            local commissionRate = 0
+            if Config.BankOwnership.Enabled and ownedBank and ownedBank.commission_rate then
+                commissionRate = tonumber(ownedBank.commission_rate) or 0
+            end
+
+            local isOwned = ownedBank ~= nil
+            local bankType = bankLocation.bankType or (isOwned and 'private' or 'state')
+            currentBankInfo = {
+                id = bankLocation.id,
+                name = bankLocation.name,
+                bankType = bankType,
+                commissionRate = commissionRate,
+                isOwned = isOwned
+            }
+        end
+    end
+
+    local ownedAccounts = MySQL.query.await('SELECT * FROM bank_accounts WHERE owner = ?', { identifier })
+
     local sharedAccounts = MySQL.query.await([[
         SELECT ba.* FROM bank_accounts ba
         INNER JOIN bank_shared_access bsa ON ba.id = bsa.account_id
         WHERE bsa.user_identifier = ?
-    ]], {identifier})
-    
-    -- Combinar todas las cuentas
+    ]], { identifier })
+
     local allAccounts = {}
     for _, acc in ipairs(ownedAccounts or {}) do
         acc.isOwner = true
@@ -199,193 +109,208 @@ lib.callback.register('muhaddil_bank:getData', function(source)
         acc.isOwner = false
         table.insert(allAccounts, acc)
     end
-    
-    -- Obtener transacciones de todas las cuentas del jugador
+
     local transactions = {}
     for _, acc in ipairs(allAccounts) do
         local accTransactions = MySQL.query.await([[
-            SELECT * FROM bank_transactions 
-            WHERE account_id = ? 
-            ORDER BY created_at DESC 
+            SELECT * FROM bank_transactions
+            WHERE account_id = ?
+            ORDER BY created_at DESC
             LIMIT 50
-        ]], {acc.id})
-        
+        ]], { acc.id })
+
         for _, trans in ipairs(accTransactions or {}) do
             trans.account_name = acc.account_name
             table.insert(transactions, trans)
         end
     end
-    
-    -- Ordenar transacciones por fecha (más recientes primero)
+
     table.sort(transactions, function(a, b)
         return a.created_at > b.created_at
     end)
-    
-    -- Obtener préstamos
+
     local loans = MySQL.query.await([[
-        SELECT * FROM bank_loans 
+        SELECT * FROM bank_loans
         WHERE user_identifier = ? AND status = 'active'
-    ]], {identifier})
-    
-    -- Obtener bancos que posee
+    ]], { identifier })
+
     local ownedBanks = MySQL.query.await([[
-        SELECT * FROM bank_ownership 
+        SELECT * FROM bank_ownership
         WHERE owner = ?
-    ]], {identifier})
-    
-    -- Obtener dinero en efectivo
+    ]], { identifier })
+
+    local availableBanks = {}
+    for _, bankLocation in ipairs(Config.BankLocations) do
+        if bankLocation.purchasable then
+            local owner = MySQL.scalar.await('SELECT owner FROM bank_ownership WHERE bank_id = ?', { bankLocation.id })
+
+            if not owner then
+                table.insert(availableBanks, {
+                    id = bankLocation.id,
+                    name = bankLocation.name,
+                    price = Config.BankOwnership.PurchasePrice
+                })
+            end
+        end
+    end
+
     local cash = GetPlayerMoney(source)
-    
+
     return {
         accounts = allAccounts,
+        maxAccounts = Config.Accounts.MaxPerPlayer,
         transactions = transactions,
         loans = loans or {},
         ownedBanks = ownedBanks or {},
+        availableBanks = availableBanks,
         cash = cash,
-        playerIdentifier = identifier
+        playerIdentifier = identifier,
+        currentBankInfo = currentBankInfo
     }
 end)
 
--- Crear cuenta
 RegisterNetEvent('muhaddil_bank:createAccount', function(data)
     local src = source
-    local identifier = GetIdentifier(src)
+    local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
-    
+
     local accountName = data.accountName or data.name
     if not accountName or accountName == "" then
         return Notify(src, 'error', 'Nombre de cuenta inválido')
     end
-    
-    -- Verificar límite de cuentas
-    local count = MySQL.scalar.await('SELECT COUNT(*) FROM bank_accounts WHERE owner = ?', {identifier})
+
+    local count = MySQL.scalar.await('SELECT COUNT(*) FROM bank_accounts WHERE owner = ?', { identifier })
     if count >= Config.Accounts.MaxPerPlayer then
         return Notify(src, 'error', 'Has alcanzado el límite de cuentas (' .. Config.Accounts.MaxPerPlayer .. ')')
     end
-    
-    -- Crear cuenta
-    MySQL.insert.await('INSERT INTO bank_accounts (owner, account_name, balance) VALUES (?, ?, ?)', {
-        identifier, accountName, Config.Accounts.InitialBalance
+
+    local isFirstAccount = (count == 0)
+    local initialBalance = Config.Accounts.InitialBalance
+
+    if isFirstAccount then
+        local frameworkMoney = GetPlayerBankMoney(src)
+        if frameworkMoney > 0 then
+            initialBalance = frameworkMoney
+        end
+    end
+
+    local accountId = MySQL.insert.await('INSERT INTO bank_accounts (owner, account_name, balance) VALUES (?, ?, ?)', {
+        identifier, accountName, initialBalance
     })
-    
+
+    if isFirstAccount and initialBalance > Config.Accounts.InitialBalance then
+        MySQL.insert.await([[
+            INSERT INTO bank_transactions (account_id, type, amount, description)
+            VALUES (?, ?, ?, ?)
+        ]], { accountId, 'import', initialBalance, 'Importación inicial' })
+    end
+
     Notify(src, 'success', 'Cuenta creada: ' .. accountName)
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 end)
 
--- Añadir usuario compartido
 RegisterNetEvent('muhaddil_bank:addSharedUser', function(accountId, targetId)
     local src = source
-    local identifier = GetIdentifier(src)
+    local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
-    
-    -- Verificar que el jugador es el dueño
-    local owner = MySQL.scalar.await('SELECT owner FROM bank_accounts WHERE id = ?', {accountId})
+
+    local owner = MySQL.scalar.await('SELECT owner FROM bank_accounts WHERE id = ?', { accountId })
     if owner ~= identifier then
         return Notify(src, 'error', 'Solo el dueño puede añadir usuarios compartidos')
     end
-    
-    -- Verificar que el target existe (convertir ID del jugador a identifier)
-    local targetIdentifier = GetIdentifier(targetId)
+
+    local targetIdentifier = GetPlayerIdentifier(targetId)
     if not targetIdentifier then
         return Notify(src, 'error', 'Jugador no encontrado')
     end
-    
-    -- Verificar que no sea el mismo dueño
+
     if targetIdentifier == identifier then
         return Notify(src, 'error', 'No puedes añadirte a ti mismo')
     end
-    
-    -- Verificar límite de usuarios compartidos
-    local sharedCount = MySQL.scalar.await('SELECT COUNT(*) FROM bank_shared_access WHERE account_id = ?', {accountId})
+
+    local sharedCount = MySQL.scalar.await('SELECT COUNT(*) FROM bank_shared_access WHERE account_id = ?', { accountId })
     if sharedCount >= Config.Accounts.MaxSharedUsers then
         return Notify(src, 'error', 'Límite de usuarios compartidos alcanzado')
     end
-    
-    -- Verificar si ya está añadido
-    local exists = MySQL.scalar.await('SELECT COUNT(*) FROM bank_shared_access WHERE account_id = ? AND user_identifier = ?', {
-        accountId, targetIdentifier
-    })
+
+    local exists = MySQL.scalar.await(
+        'SELECT COUNT(*) FROM bank_shared_access WHERE account_id = ? AND user_identifier = ?', {
+            accountId, targetIdentifier
+        })
     if exists > 0 then
         return Notify(src, 'error', 'El usuario ya tiene acceso a esta cuenta')
     end
-    
-    -- Añadir usuario compartido
+
     MySQL.insert.await('INSERT INTO bank_shared_access (account_id, user_identifier) VALUES (?, ?)', {
         accountId, targetIdentifier
     })
-    
+
     Notify(src, 'success', 'Usuario añadido a la cuenta')
     TriggerClientEvent('muhaddil_bank:refreshData', src)
-    
-    -- Notificar al usuario añadido si está conectado
+
     if GetPlayerName(targetId) then
         Notify(targetId, 'info', 'Has sido añadido a una cuenta compartida')
         TriggerClientEvent('muhaddil_bank:refreshData', targetId)
     end
 end)
 
--- Remover usuario compartido
 RegisterNetEvent('muhaddil_bank:removeSharedUser', function(accountId, targetId)
     local src = source
-    local identifier = GetIdentifier(src)
+    local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
-    
-    -- Verificar que el jugador es el dueño
-    local owner = MySQL.scalar.await('SELECT owner FROM bank_accounts WHERE id = ?', {accountId})
+
+    local owner = MySQL.scalar.await('SELECT owner FROM bank_accounts WHERE id = ?', { accountId })
     if owner ~= identifier then
         return Notify(src, 'error', 'Solo el dueño puede remover usuarios compartidos')
     end
-    
-    -- Obtener identifier del target
-    local targetIdentifier = GetIdentifier(targetId)
+
+    local targetIdentifier = GetPlayerIdentifier(targetId)
     if not targetIdentifier then
         return Notify(src, 'error', 'Jugador no encontrado')
     end
-    
+
     if targetIdentifier == identifier then
         return Notify(src, 'error', 'No puedes quitarte a ti mismo')
     end
 
-    -- Remover usuario compartido
     MySQL.query.await('DELETE FROM bank_shared_access WHERE account_id = ? AND user_identifier = ?', {
         accountId, targetIdentifier
     })
-    
+
     Notify(src, 'success', 'Usuario removido de la cuenta')
     TriggerClientEvent('muhaddil_bank:refreshData', src)
-    
-    -- Notificar al usuario removido si está conectado
+
     if GetPlayerName(targetId) then
         Notify(targetId, 'warning', 'Has sido removido de una cuenta compartida')
         TriggerClientEvent('muhaddil_bank:refreshData', targetId)
     end
 end)
 
--- Eliminar cuenta
 RegisterNetEvent('muhaddil_bank:deleteAccount', function(accountId)
     local src = source
-    local identifier = GetIdentifier(src)
+    local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
 
-    local owner = MySQL.scalar.await('SELECT owner FROM bank_accounts WHERE id = ?', {accountId})
+    local owner = MySQL.scalar.await('SELECT owner FROM bank_accounts WHERE id = ?', { accountId })
     if owner ~= identifier then
         return Notify(src, 'error', 'No tienes permisos para eliminar esta cuenta')
     end
 
-    MySQL.query.await('DELETE FROM bank_accounts WHERE id = ?', {accountId})
+    MySQL.query.await('DELETE FROM bank_accounts WHERE id = ?', { accountId })
     Notify(src, 'success', 'Cuenta eliminada')
+    TriggerEvent('muhaddil_bank:afterDeleteAccount', src)
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 end)
 
--- Transferir dinero
 RegisterNetEvent('muhaddil_bank:transfer', function(data)
     local src = source
-    local identifier = GetIdentifier(src)
+    local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
 
     local fromAccountId = tonumber(data.fromAccountId)
     local toAccountId   = tonumber(data.toAccountId)
     local amount        = tonumber(data.amount)
+    local bankLocation  = data.bankLocation
 
     if not fromAccountId or not toAccountId then
         return Notify(src, 'error', 'Cuenta inválida')
@@ -398,7 +323,7 @@ RegisterNetEvent('muhaddil_bank:transfer', function(data)
     local account = MySQL.single.await([[
         SELECT ba.*
         FROM bank_accounts ba
-        LEFT JOIN bank_shared_access bsa 
+        LEFT JOIN bank_shared_access bsa
             ON ba.id = bsa.account_id AND bsa.user_identifier = ?
         WHERE ba.id = ? AND (ba.owner = ? OR bsa.user_identifier = ?)
     ]], { identifier, fromAccountId, identifier, identifier })
@@ -412,7 +337,6 @@ RegisterNetEvent('muhaddil_bank:transfer', function(data)
         return Notify(src, 'error', 'Saldo insuficiente')
     end
 
-    -- Transacción oxmysql correcta
     local success = MySQL.transaction.await({
         {
             query = 'UPDATE bank_accounts SET balance = balance - ? WHERE id = ?',
@@ -423,12 +347,14 @@ RegisterNetEvent('muhaddil_bank:transfer', function(data)
             values = { amount, toAccountId }
         },
         {
-            query = 'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-            values = { fromAccountId, 'transfer_out', -amount, 'Transferencia a cuenta #' .. toAccountId }
+            query =
+            'INSERT INTO bank_transactions (account_id, type, amount, description, bank_location) VALUES (?, ?, ?, ?, ?)',
+            values = { fromAccountId, 'transfer_out', -amount, 'Transferencia a cuenta #' .. toAccountId, bankLocation }
         },
         {
-            query = 'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-            values = { toAccountId, 'transfer_in', amount, 'Transferencia desde cuenta #' .. fromAccountId }
+            query =
+            'INSERT INTO bank_transactions (account_id, type, amount, description, bank_location) VALUES (?, ?, ?, ?, ?)',
+            values = { toAccountId, 'transfer_in', amount, 'Transferencia desde cuenta #' .. fromAccountId, bankLocation }
         }
     })
 
@@ -436,36 +362,46 @@ RegisterNetEvent('muhaddil_bank:transfer', function(data)
         return Notify(src, 'error', 'Error al procesar la transferencia')
     end
 
+    if Config.BankOwnership.Enabled and Config.BankOwnership.CommissionOnTransfer and bankLocation then
+        ApplyBankCommission(bankLocation, amount)
+    end
+
     Notify(src, 'success', 'Transferencia realizada')
+    TriggerEvent('muhaddil_bank:afterTransfer', src)
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 end)
 
--- Depositar
-RegisterNetEvent('muhaddil_bank:deposit', function(accountId, amount)
+RegisterNetEvent('muhaddil_bank:deposit', function(accountId, amount, bankLocation)
     local src = source
-    local identifier = GetIdentifier(src)
+    local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
 
     amount = tonumber(amount)
     if amount <= 0 then return Notify(src, 'error', 'Cantidad inválida') end
 
     if RemovePlayerMoney(src, amount) then
-        MySQL.query.await('UPDATE bank_accounts SET balance = balance + ? WHERE id = ?', {amount, accountId})
-        MySQL.insert.await('INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)', {
-            accountId, 'deposit', amount, 'Depósito en efectivo'
-        })
-        
+        MySQL.query.await('UPDATE bank_accounts SET balance = balance + ? WHERE id = ?', { amount, accountId })
+        MySQL.insert.await(
+            'INSERT INTO bank_transactions (account_id, type, amount, description, bank_location) VALUES (?, ?, ?, ?, ?)',
+            {
+                accountId, 'deposit', amount, 'Depósito en efectivo', bankLocation
+            })
+
+        if Config.BankOwnership.Enabled and Config.BankOwnership.CommissionOnDeposit and bankLocation then
+            ApplyBankCommission(bankLocation, amount)
+        end
+
         Notify(src, 'success', 'Depósito realizado')
+        TriggerEvent('muhaddil_bank:afterDeposit', src)
         TriggerClientEvent('muhaddil_bank:refreshData', src)
     else
         Notify(src, 'error', 'No tienes suficiente dinero en efectivo')
     end
 end)
 
--- Retirar
-RegisterNetEvent('muhaddil_bank:withdraw', function(accountId, amount)
+RegisterNetEvent('muhaddil_bank:withdraw', function(accountId, amount, bankLocation)
     local src = source
-    local identifier = GetIdentifier(src)
+    local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
 
     amount = tonumber(amount)
@@ -473,12 +409,9 @@ RegisterNetEvent('muhaddil_bank:withdraw', function(accountId, amount)
         return Notify(src, 'error', 'Cantidad inválida')
     end
 
-    local balance = MySQL.scalar.await(
-        'SELECT balance FROM bank_accounts WHERE id = ?',
-        { accountId }
-    )
-
+    local balance = MySQL.scalar.await('SELECT balance FROM bank_accounts WHERE id = ?', { accountId })
     balance = tonumber(balance)
+
     if not balance then
         return Notify(src, 'error', 'Cuenta no encontrada')
     end
@@ -487,26 +420,26 @@ RegisterNetEvent('muhaddil_bank:withdraw', function(accountId, amount)
         return Notify(src, 'error', 'Saldo insuficiente')
     end
 
-    MySQL.query.await(
-        'UPDATE bank_accounts SET balance = balance - ? WHERE id = ?',
-        { amount, accountId }
-    )
-
+    MySQL.query.await('UPDATE bank_accounts SET balance = balance - ? WHERE id = ?', { amount, accountId })
     AddPlayerMoney(src, amount)
 
     MySQL.insert.await(
-        'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-        { accountId, 'withdrawal', -amount, 'Retiro en efectivo' }
-    )
+        'INSERT INTO bank_transactions (account_id, type, amount, description, bank_location) VALUES (?, ?, ?, ?, ?)', {
+            accountId, 'withdrawal', -amount, 'Retiro en efectivo', bankLocation
+        })
+
+    if Config.BankOwnership.Enabled and Config.BankOwnership.CommissionOnWithdraw and bankLocation then
+        ApplyBankCommission(bankLocation, amount)
+    end
 
     Notify(src, 'success', 'Retiro realizado')
+    TriggerEvent('muhaddil_bank:afterWithdraw', src)
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 end)
 
--- Solicitar préstamo
 RegisterNetEvent('muhaddil_bank:requestLoan', function(data)
     local src = source
-    local identifier = GetIdentifier(src)
+    local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
 
     local amount = tonumber(data.amount)
@@ -516,26 +449,28 @@ RegisterNetEvent('muhaddil_bank:requestLoan', function(data)
         return Notify(src, 'error', 'Cantidad inválida')
     end
 
-    local activeLoans = MySQL.scalar.await('SELECT COUNT(*) FROM bank_loans WHERE user_identifier = ? AND status = "active"', {identifier})
+    local activeLoans = MySQL.scalar.await(
+        'SELECT COUNT(*) FROM bank_loans WHERE user_identifier = ? AND status = "active"', { identifier })
     if activeLoans > 0 then
         return Notify(src, 'error', 'Ya tienes un préstamo activo')
     end
 
     local totalWithInterest = amount * (1 + Config.Loans.InterestRate)
 
-    MySQL.insert.await('INSERT INTO bank_loans (user_identifier, amount, remaining, interest_rate, installments) VALUES (?, ?, ?, ?, ?)', {
-        identifier, amount, totalWithInterest, Config.Loans.InterestRate * 100, installments
-    })
+    MySQL.insert.await(
+        'INSERT INTO bank_loans (user_identifier, amount, remaining, interest_rate, installments) VALUES (?, ?, ?, ?, ?)',
+        {
+            identifier, amount, totalWithInterest, Config.Loans.InterestRate * 100, installments
+        })
 
     AddPlayerMoney(src, amount)
     Notify(src, 'success', 'Préstamo aprobado')
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 end)
 
--- Pagar préstamo
 RegisterNetEvent('muhaddil_bank:payLoan', function(loanId, amount)
     local src = source
-    local identifier = GetIdentifier(src)
+    local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
 
     amount = tonumber(amount)
@@ -543,12 +478,10 @@ RegisterNetEvent('muhaddil_bank:payLoan', function(loanId, amount)
         return Notify(src, 'error', 'Cantidad inválida')
     end
 
-    local remaining = MySQL.scalar.await(
-        'SELECT remaining FROM bank_loans WHERE id = ? AND user_identifier = ?',
-        { loanId, identifier }
-    )
-
+    local remaining = MySQL.scalar.await('SELECT remaining FROM bank_loans WHERE id = ? AND user_identifier = ?',
+        { loanId, identifier })
     remaining = tonumber(remaining)
+
     if not remaining then
         return Notify(src, 'error', 'Préstamo no encontrado')
     end
@@ -561,10 +494,8 @@ RegisterNetEvent('muhaddil_bank:payLoan', function(loanId, amount)
         local newRemaining = remaining - amount
         local status = (newRemaining <= 0) and 'paid' or 'active'
 
-        MySQL.query.await(
-            'UPDATE bank_loans SET remaining = ?, status = ? WHERE id = ?',
-            { newRemaining, status, loanId }
-        )
+        MySQL.query.await('UPDATE bank_loans SET remaining = ?, status = ? WHERE id = ?',
+            { newRemaining, status, loanId })
 
         Notify(src, 'success', 'Pago realizado. Restante: $' .. newRemaining)
         TriggerClientEvent('muhaddil_bank:refreshData', src)
@@ -573,29 +504,54 @@ RegisterNetEvent('muhaddil_bank:payLoan', function(loanId, amount)
     end
 end)
 
--- Comprar banco
-RegisterNetEvent('muhaddil_bank:purchaseBank', function(bankName)
+RegisterNetEvent('muhaddil_bank:purchaseBank', function(bankId)
     local src = source
-    local identifier = GetIdentifier(src)
+    local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
 
-    local count = MySQL.scalar.await('SELECT COUNT(*) FROM bank_ownership WHERE owner = ?', {identifier})
-    if count >= Config.BankOwnership.MaxBanksPerPlayer then
-        return Notify(src, 'error', 'Has alcanzado el límite de bancos')
+    if not Config.BankOwnership.Enabled then
+        return Notify(src, 'error', 'La compra de bancos está deshabilitada')
     end
 
-    if RemovePlayerMoney(src, Config.BankOwnership.PurchasePrice) then
-        MySQL.insert.await('INSERT INTO bank_ownership (owner, bank_name, commission_rate) VALUES (?, ?, ?)', {
-            identifier, bankName, Config.BankOwnership.CommissionRate
-        })
-        Notify(src, 'success', 'Banco comprado exitosamente')
-        TriggerClientEvent('muhaddil_bank:refreshData', src)
-    else
-        Notify(src, 'error', 'No tienes suficiente dinero')
+    local bankExists = false
+    local bankName = nil
+    for _, bank in ipairs(Config.BankLocations) do
+        if bank.id == bankId and bank.purchasable then
+            bankExists = true
+            bankName = bank.name
+            break
+        end
     end
+
+    if not bankExists then
+        return Notify(src, 'error', 'Este banco no está disponible para compra')
+    end
+
+    local currentOwner = MySQL.scalar.await('SELECT owner FROM bank_ownership WHERE bank_id = ?', { bankId })
+    if currentOwner then
+        return Notify(src, 'error', 'Este banco ya tiene dueño')
+    end
+
+    local playerBankCount = MySQL.scalar.await('SELECT COUNT(*) FROM bank_ownership WHERE owner = ?', { identifier })
+    if playerBankCount >= Config.BankOwnership.MaxBanksPerPlayer then
+        return Notify(src, 'error',
+            'Has alcanzado el límite de bancos (' .. Config.BankOwnership.MaxBanksPerPlayer .. ')')
+    end
+
+    if not RemovePlayerMoney(src, Config.BankOwnership.PurchasePrice) then
+        return Notify(src, 'error', 'No tienes suficiente dinero ($' .. Config.BankOwnership.PurchasePrice .. ')')
+    end
+
+    MySQL.insert.await('INSERT INTO bank_ownership (bank_id, owner, bank_name, commission_rate) VALUES (?, ?, ?, ?)', {
+        bankId, identifier, bankName, Config.BankOwnership.DefaultCommissionRate
+    })
+
+    Notify(src, 'success', 'Has comprado ' .. bankName)
+    TriggerClientEvent('muhaddil_bank:refreshData', src)
+
+    print(string.format("^2[Bank System] %s compró el banco %s (%s)^7", GetPlayerName(src), bankName, bankId))
 end)
 
--- Comando para abrir el banco
 RegisterCommand(Config.OpenCommand, function(source, args, rawCommand)
     TriggerClientEvent('muhaddil_bank:openBank', source)
 end, false)

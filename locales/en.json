@@ -1,0 +1,233 @@
+{
+  "sidebar": {
+    "bankName": "Bank",
+    "bankSubtitle": "National",
+    "accounts": "Accounts",
+    "cards": "Cards",
+    "transactions": "Transactions",
+    "loans": "Loans",
+    "stats": "Statistics",
+    "banks": "My Banks",
+    "close": "Close"
+  },
+  "dashboard": {
+    "welcome": "Welcome to the Bank!",
+    "noAccounts": "You don't have any bank accounts yet. Create your first account to start managing your finances.",
+    "createFirstAccount": "Create My First Account",
+    "totalBalance": "Total Balance",
+    "selectedAccountBalance": "Selected Account Balance",
+    "yourAccounts": "Your Accounts",
+    "sharedAccounts": "Shared Accounts",
+    "shared": "Shared",
+    "newAccount": "New Account",
+    "maxAccountsReached": "You have reached the limit of {max} accounts",
+    "bankInfo": {
+      "associated": "Associated Bank",
+      "commission": "Commission Rate",
+      "bankType": "Bank Type",
+      "bankTypes": {
+        "state": "State",
+        "private": "Private"
+      },
+      "accountType": "Account Type",
+      "owner": "Owner",
+      "shared": "Shared"
+    },
+    "feeCalculator": {
+      "title": "Transaction Fees",
+      "deposit": "Deposit",
+      "withdraw": "Withdraw",
+      "transfer": "Transfer",
+      "free": "Free",
+      "fee": "Fee",
+      "youReceive": "You receive",
+      "youPay": "You pay",
+      "disclaimer": "Some of these commissions may not apply depending on the bank, account, or type of operation."
+    },
+    "actions": {
+      "addUser": "Add User",
+      "removeUser": "Remove User",
+      "deleteAccount": "Delete Account"
+    }
+  },
+  "quickActions": {
+    "deposit": "Deposit",
+    "withdraw": "Withdraw",
+    "transfer": "Transfer",
+    "newAccount": "New Account"
+  },
+  "transactions": {
+    "search": "Search transactions...",
+    "all": "All",
+    "income": "Income",
+    "expenses": "Expenses",
+    "history": "Transaction History",
+    "count": "{count} transactions",
+    "noResults": "No transactions found",
+    "noTransactions": "No recent transactions"
+  },
+  "loans": {
+    "title": "Loans",
+    "subtitle": "Manage your credits and request financing",
+    "requestLoan": "Request Loan",
+    "noLoans": "You have no active loans",
+    "noLoansDesc": "Need extra money for your projects? Request a loan with competitive rates.",
+    "requestNow": "Request Now",
+    "loanId": "Loan #{id}",
+    "active": "Active",
+    "originalAmount": "Original Amount",
+    "interest": "Interest",
+    "installments": "Installments",
+    "date": "Date",
+    "remaining": "Remaining to pay",
+    "paid": "paid",
+    "payInstallment": "Pay Installment"
+  },
+  "stats": {
+    "currentBalance": "Current Balance",
+    "totalIncome": "Total Income",
+    "totalExpenses": "Total Expenses",
+    "netFlow": "Net Flow",
+    "financialActivity": "Financial Activity",
+    "last7Days": "Last 7 days",
+    "noData": "Not enough data to show statistics",
+    "income": "Income",
+    "expenses": "Expenses"
+  },
+  "banks": {
+    "bankManagement": "Bank Management",
+    "manageDescription": "Manage your bank branches, adjust commissions, and maximize your passive income.",
+    "specialPrice": "Special Price",
+    "perBank": "per bank",
+    "commissions": "Commissions 0.5-3%",
+    "passiveIncome": "Passive income",
+    "fullManagement": "Full management",
+    "availableBanks": "Available Banks",
+    "purchaseDescription": "Purchase a bank and start generating passive income",
+    "available": "Available now",
+    "price": "Price",
+    "buy": "Buy",
+    "myBranches": "My Branches",
+    "noBranches": "You don't own any bank branches",
+    "startDescription": "Start generating passive income by purchasing your first bank branch",
+    "acquiredOn": "Acquired on",
+    "commission": "Commission",
+    "totalEarned": "Total Earned",
+    "pending": "Pending",
+    "withdrawEarnings": "Withdraw Earnings",
+    "changeCommission": "Change Commission",
+    "rename": "Rename",
+    "transfer": "Transfer",
+    "sell": "Sell (50%)",
+    "transferBank": "Transfer Bank",
+    "renameBank": "Rename Bank",
+    "sellBank": "Sell Bank",
+    "sellConfirmation": "Are you sure you want to sell this bank? You will receive 50% of the purchase price plus your pending earnings.",
+    "bankName": "Bank Name",
+    "pendingEarnings": "Pending Earnings",
+    "confirmSell": "Confirm Sale",
+    "transferDescription": "Transfer \"{bankName}\" to another player",
+    "playerIdPlaceholder": "Player ID (e.g., 1, 2, 3...)",
+    "commissionDescription": "Set the commission rate (0.5% - 3%)",
+    "renameDescription": "Change the name of your bank",
+    "newNamePlaceholder": "New bank name",
+    "updateCommission": "Update Commission",
+    "invalidPlayerId": "Invalid player ID",
+    "commissionRangeError": "Commission must be between 0.5% and 3%",
+    "nameLengthError": "Name must be at least 3 characters"
+  },
+  "atm": {
+    "title": "ATM",
+    "secureAccess": "Secure Access",
+    "enterPin": "Enter your 4-digit PIN",
+    "pressEsc": "Press ESC to exit",
+    "card": "Card",
+    "terminal": "Banking Terminal",
+    "selectedAccount": "Selected Account",
+    "availableBalance": "Available Balance",
+    "cash": "Cash",
+    "deposit": "Deposit",
+    "withdraw": "Withdraw",
+    "transfer": "Transfer",
+    "depositMoney": "Deposit Money",
+    "withdrawMoney": "Withdraw Money",
+    "transferMoney": "Transfer Money",
+    "targetAccount": "Target Account",
+    "selectAccount": "Select account..."
+  },
+  "cards": {
+    "title": "My Cards",
+    "description": "Manage your debit cards and security",
+    "newCard": "New Card",
+    "blocked": "Blocked",
+    "active": "Active",
+    "cardNumber": "CARD NUMBER",
+    "linkedAccount": "Linked Account",
+    "unblock": "Unblock",
+    "block": "Block",
+    "changePin": "Change PIN",
+    "delete": "Delete",
+    "noCards": "You have no active cards",
+    "createCardMessage": "Create a new card to access ATMs",
+    "confirmDelete": "Confirm deletion",
+    "deleteConfirmation": "Are you sure you want to delete this card? This action cannot be undone.",
+    "cancel": "Cancel",
+    "selectAccount": "Select account...",
+    "securityPin": "Security PIN (4 digits)",
+    "issuanceCost": "Issuance cost",
+    "pinReminder": "Make sure to memorize your PIN, you will need it at ATMs.",
+    "requestCard": "Request Card",
+    "currentPin": "Current PIN",
+    "newPin": "New PIN",
+    "confirmPin": "Confirm",
+    "updatePin": "Update PIN",
+    "selectAccountError": "Select an account",
+    "pinError": "PIN must be 4 numeric digits",
+    "pinMatchError": "New PINs don't match",
+    "createError": "Error creating card",
+    "blockError": "Error changing status",
+    "changePinError": "Error changing PIN",
+    "deleteError": "Error deleting card"
+  },
+  "modals": {
+    "deposit": {
+      "title": "Deposit Money"
+    },
+    "withdraw": {
+      "title": "Withdraw Money"
+    },
+    "transfer": {
+      "title": "Transfer Money",
+      "toAccount": "Destination Account ID"
+    },
+    "createAccount": {
+      "title": "New Account",
+      "placeholder": "Account name"
+    },
+    "loan": {
+      "title": "Request Loan",
+      "installments": "Installments"
+    },
+    "addSharedUser": {
+      "title": "Add Shared User"
+    },
+    "removeSharedUser": {
+      "title": "Remove Shared User"
+    },
+    "deleteAccount": {
+      "title": "Delete Account",
+      "confirm": "Are you sure you want to delete this account? This action cannot be undone and all funds will be lost."
+    },
+    "common": {
+      "amount": "Amount",
+      "userId": "User ID",
+      "verifyingAccess": "Verifying access..."
+    }
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "free": "Free"
+  }
+}
