@@ -73,23 +73,23 @@ function OpenATM()
     if Config.Cards.Enabled and Config.Cards.RequireCardForATM then
         local hasCard = lib.callback.await('muhaddil_bank:hasCard', false)
         if not hasCard then
-            return lib.notify({ type = 'error', description = 'Necesitas una tarjeta de débito para usar el cajero' })
+            return lib.notify({ type = 'error', description = Locale('client.need_debit_card') })
         end
 
         currentCard = lib.callback.await('muhaddil_bank:getPlayerCard', false)
         if not currentCard then
-            return lib.notify({ type = 'error', description = 'No se encontró tu tarjeta' })
+            return lib.notify({ type = 'error', description = Locale('client.card_not_found') })
         end
 
         if currentCard.is_blocked then
-            return lib.notify({ type = 'error', description = 'Tu tarjeta está bloqueada' })
+            return lib.notify({ type = 'error', description = Locale('client.card_blocked') })
         end
     end
 
     local data = lib.callback.await('muhaddil_bank:getATMData', false)
 
     if not data then
-        return lib.notify({ type = 'error', description = 'Error al conectar con el cajero' })
+        return lib.notify({ type = 'error', description = Locale('client.atm_connection_error') })
     end
 
     isATMOpen = true

@@ -79,7 +79,7 @@ Citizen.CreateThread(function()
                             {
                                 name = 'bank_' .. bank.id,
                                 icon = 'fas fa-university',
-                                label = 'Abrir ' .. bank.name,
+                                label = Locale('client.open', bank.name),
                                 onSelect = function()
                                     OpenBank(bank.id, bank.name)
                                 end
@@ -90,7 +90,7 @@ Citizen.CreateThread(function()
                             options = {
                                 {
                                     icon = 'fas fa-university',
-                                    label = 'Abrir ' .. bank.name,
+                                    label = Locale('client.open', bank.name),
                                     action = function()
                                         OpenBank(bank.id, bank.name)
                                     end
@@ -137,7 +137,7 @@ Citizen.CreateThread(function()
 
                     if distance < 2.0 then
                         if not markerShow then
-                            lib.showTextUI('[E] - Abrir Banco')
+                            lib.showTextUI(Locale('client.open_bank'))
                             markerShow = true
                         end
                         if IsControlJustReleased(0, 38) then
@@ -161,7 +161,7 @@ function OpenBank(bankId, bankName)
     if isOpen then return end
     local data = lib.callback.await('muhaddil_bank:getData', false, bankId)
     if not data then
-        return lib.notify({ type = 'error', description = 'Error al conectar con el banco' })
+        return lib.notify({ type = 'error', description = Locale('client.bank_connection_error') })
     end
     isOpen = true
     currentBankLocation = bankId
@@ -320,7 +320,7 @@ RegisterNetEvent('muhaddil_bank:openBank', function()
             end
         end
     else
-        lib.notify({ type = 'error', description = 'No estás cerca de ningún banco' })
+        lib.notify({ type = 'error', description = Locale('client.not_near_bank') })
     end
 end)
 

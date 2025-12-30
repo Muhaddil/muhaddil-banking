@@ -66,6 +66,8 @@ const AccountCard: React.FC<{
     ]
     const colorScheme = colors[index % colors.length]
 
+    const { t } = useLocale()
+
     return (
         <div
             onClick={onClick}
@@ -78,7 +80,6 @@ const AccountCard: React.FC<{
                 }
             `}
         >
-            {/* Background decoration */}
             {isSelected && (
                 <>
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10" />
@@ -122,7 +123,7 @@ const AccountCard: React.FC<{
                         ${isSelected ? "text-white/70" : "text-white/40"}
                     `}
                     >
-                        {isShared ? "Cuenta Compartida" : "Cuenta Personal"}
+                        {isShared ? t("dashboard.sharedAccount") : t("dashboard.personalAccount")}
                     </p>
                     <h3
                         className={`
@@ -142,7 +143,7 @@ const AccountCard: React.FC<{
                             ${isSelected ? "text-white/60" : "text-white/30"}
                         `}
                         >
-                            Balance
+                            {t("dashboard.balance")}
                         </p>
                         <p
                             className={`
@@ -340,7 +341,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             <div className="space-y-6">
-                {/* Your Accounts Section */}
                 <div>
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
@@ -378,7 +378,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             />
                         ))}
 
-                        {/* Create account card */}
                         {canCreateAccount && (
                             <div
                                 onClick={() => onAction("createAccount")}
@@ -408,7 +407,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     )}
                 </div>
 
-                {/* Shared Accounts Section */}
                 {sharedAccounts.length > 0 && (
                     <div>
                         <div className="flex items-center gap-3 mb-4">

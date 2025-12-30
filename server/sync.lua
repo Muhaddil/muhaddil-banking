@@ -117,8 +117,8 @@ function DetectExternalChanges(source)
 
     local transType = frameworkDiff > 0 and 'external_deposit' or 'external_withdrawal'
     local description = frameworkDiff > 0
-        and string.format('Depósito externo +$%.2f', frameworkDiff)
-        or string.format('Cargo externo -$%.2f', math.abs(frameworkDiff))
+        and Locale('server.externalDeposit', frameworkDiff)
+        or Locale('server.externalWithdraw', string.format("%.2f", math.abs(frameworkDiff)))
 
     MySQL.insert.await([[
         INSERT INTO bank_transactions (account_id, type, amount, description)

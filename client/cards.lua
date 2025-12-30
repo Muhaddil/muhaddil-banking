@@ -87,7 +87,8 @@ function AttemptCardTheft(targetServerId)
         if success then
             TriggerServerEvent('muhaddil_bank:attemptCardTheft', targetServerId)
         else
-            lib.notify({ type = 'error', description = 'Robo cancelado' })
+            lib.notify({ type = 'error', description = Locale('client.robbery_cancelled') })
+            return
         end
     else
         Wait(3000)
@@ -99,10 +100,10 @@ end
 
 RegisterNetEvent('muhaddil_bank:cardTheftResult', function(success, cardData)
     if success and cardData then
-        lib.notify({ type = 'success', description = 'Has robado una tarjeta bancaria' })
+        lib.notify({ type = 'success', description = Locale('client.card_stolen') })
         stolenCard = cardData
     elseif not success then
-        lib.notify({ type = 'error', description = cardData or 'No pudo robar la tarjeta' })
+        lib.notify({ type = 'error', description = cardData or Locale('client.card_steal_failed') })
     end
 end)
 
@@ -127,9 +128,9 @@ exports('ClearStolenCard', ClearStolenCard)
 RegisterCommand('tirartarjeta', function()
     if stolenCard then
         stolenCard = nil
-        lib.notify({ type = 'info', description = 'Has tirado la tarjeta robada' })
+        lib.notify({ type = 'info', description = Locale('client.card_discarded') })
     else
-        lib.notify({ type = 'error', description = 'No tienes ninguna tarjeta robada' })
+        lib.notify({ type = 'error', description = Locale('client.no_stolen_card') })
     end
 end, false)
 
@@ -148,7 +149,8 @@ RegisterNUICallback('atmUseStolenCard', function(data, cb)
         cb({ success = false, error = result.error })
         if result.error:find('bloqueada') then
             stolenCard = nil
-            lib.notify({ type = 'warning', description = 'La tarjeta ha sido bloqueada y ya no sirve' })
+            lib.notify({ type = 'warning', description = Locale('client.card_blocked_warning') })
+            TriggerServerEvent('muhaddil_bank:blockStolenCard', stolenCard)
         end
     end
 end)

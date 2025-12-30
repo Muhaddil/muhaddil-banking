@@ -98,7 +98,7 @@ function ATMTarget(ATM_MODELS, isATMOpen)
             {
                 name = 'use_atm',
                 icon = 'fa-solid fa-credit-card',
-                label = 'Usar Cajero',
+                label = Locale('client.use_atm'),
                 distance = Config.ATMs.TargetDistance,
                 onSelect = function(data)
                     if isATMOpen then return end
@@ -110,7 +110,7 @@ function ATMTarget(ATM_MODELS, isATMOpen)
         exports['qb-target']:AddTargetModel(joaat(ATM_MODELS), {
             options = {
                 {
-                    label = 'Usar Cajero',
+                    label = Locale('client.use_atm'),
                     icon = "fas fa-glass-water",
                     action = function(entity)
                         if isATMOpen then return end

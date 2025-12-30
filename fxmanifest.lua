@@ -10,7 +10,7 @@ ui_page 'web/build/index.html'
 
 shared_scripts {
     '@ox_lib/init.lua',
-    'config.lua'
+    'shared/*'
 }
 
 client_script 'client/*'

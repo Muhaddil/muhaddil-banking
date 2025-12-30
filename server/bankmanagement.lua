@@ -84,7 +84,7 @@ RegisterNetEvent('muhaddil_bank:sellBank', function(bankId)
     end
 
     Notify(src, 'success',
-        string.format('Has vendido %s por $%s', result.bankName, result.amount)
+        Locale('server.bank_sold', result.amount)
     )
 
     TriggerClientEvent('muhaddil_bank:refreshData', src)
@@ -97,33 +97,33 @@ RegisterNetEvent('muhaddil_bank:transferBank', function(bankId, targetPlayerId)
     if not identifier then return end
 
     if not Config.BankOwnership.Enabled then
-        return Notify(src, 'error', 'La gestión de bancos está deshabilitada')
+        return Notify(src, 'error', Locale('server.bank_ownership_disabled'))
     end
 
     targetPlayerId = tonumber(targetPlayerId)
     if not targetPlayerId then
-        return Notify(src, 'error', 'ID de jugador inválido')
+        return Notify(src, 'error', Locale('server.player_not_found'))
     end
 
     local bank = MySQL.single.await('SELECT * FROM bank_ownership WHERE bank_id = ? AND owner = ?',
         { bankId, identifier })
     if not bank then
-        return Notify(src, 'error', 'No eres el dueño de este banco')
+        return Notify(src, 'error', Locale('server.bank_not_owned'))
     end
 
     local targetIdentifier = GetPlayerIdentifier(targetPlayerId)
     if not targetIdentifier then
-        return Notify(src, 'error', 'Jugador no encontrado')
+        return Notify(src, 'error', Locale('server.target_player_not_found'))
     end
 
     if targetIdentifier == identifier then
-        return Notify(src, 'error', 'No puedes transferirte a ti mismo')
+        return Notify(src, 'error', Locale('server.cannot_transfer_to_yourself'))
     end
 
     local targetBankCount = MySQL.scalar.await('SELECT COUNT(*) FROM bank_ownership WHERE owner = ?',
         { targetIdentifier })
     if targetBankCount >= Config.BankOwnership.MaxBanksPerPlayer then
-        return Notify(src, 'error', 'El jugador ha alcanzado su límite de bancos')
+        return Notify(src, 'error', Locale('server.max_banks_reached', Config.BankOwnership.MaxBanksPerPlayer))
     end
 
     MySQL.query.await([[
@@ -132,8 +132,8 @@ RegisterNetEvent('muhaddil_bank:transferBank', function(bankId, targetPlayerId)
         WHERE bank_id = ?
     ]], { targetIdentifier, bankId })
 
-    Notify(src, 'success', 'Banco transferido exitosamente')
-    Notify(targetPlayerId, 'success', 'Has recibido la propiedad de ' .. bank.bank_name)
+    Notify(src, 'success', Locale('server.bank_transferred', GetPlayerName(targetPlayerId)))
+    Notify(targetPlayerId, 'success', Locale('server.bank_received', bank.bank_name))
 
     TriggerClientEvent('muhaddil_bank:refreshData', src)
     TriggerClientEvent('muhaddil_bank:refreshData', targetPlayerId)
@@ -148,32 +148,30 @@ RegisterNetEvent('muhaddil_bank:updateCommission', function(bankId, newRate)
     if not identifier then return end
 
     if not Config.BankOwnership.Enabled then
-        return Notify(src, 'error', 'La gestión de bancos está deshabilitada')
+        return Notify(src, 'error', Locale('server.bank_ownership_disabled'))
     end
 
     newRate = tonumber(newRate)
     if not newRate then
-        return Notify(src, 'error', 'Tasa inválida')
+        return Notify(src, 'error', Locale('server.invalid_amount'))
     end
 
     if newRate < Config.BankOwnership.MinCommissionRate or newRate > Config.BankOwnership.MaxCommissionRate then
-        return Notify(src, 'error', string.format('La comisión debe estar entre %.1f%% y %.1f%%',
-            Config.BankOwnership.MinCommissionRate * 100,
-            Config.BankOwnership.MaxCommissionRate * 100))
+        return Notify(src, 'error', Locale('server.invalid_commission'))
     end
 
     local owner = MySQL.scalar.await('SELECT owner FROM bank_ownership WHERE bank_id = ?', { bankId })
     if not owner then
-        return Notify(src, 'error', 'Este banco no tiene dueño')
+        return Notify(src, 'error', Locale('server.bank_not_owned'))
     end
 
     if owner ~= identifier then
-        return Notify(src, 'error', 'No eres el dueño de este banco')
+        return Notify(src, 'error', Locale('server.bank_not_owned'))
     end
 
     MySQL.query.await('UPDATE bank_ownership SET commission_rate = ? WHERE bank_id = ?', { newRate, bankId })
 
-    Notify(src, 'success', 'Comisión actualizada a ' .. (newRate * 100) .. '%')
+    Notify(src, 'success', Locale('server.commission_updated', newRate * 100))
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 end)
 
@@ -183,24 +181,24 @@ RegisterNetEvent('muhaddil_bank:withdrawEarnings', function(bankId)
     if not identifier then return end
 
     if not Config.BankOwnership.Enabled then
-        return Notify(src, 'error', 'La gestión de bancos está deshabilitada')
+        return Notify(src, 'error', Locale('server.bank_ownership_disabled'))
     end
 
     local bank = MySQL.single.await('SELECT * FROM bank_ownership WHERE bank_id = ? AND owner = ?',
         { bankId, identifier })
     if not bank then
-        return Notify(src, 'error', 'No eres el dueño de este banco')
+        return Notify(src, 'error', Locale('server.bank_not_owned'))
     end
 
     local earnings = tonumber(bank.pending_earnings) or 0
     if earnings <= 0 then
-        return Notify(src, 'error', 'No tienes ganancias pendientes')
+        return Notify(src, 'error', Locale('server.no_pending_earnings'))
     end
 
     AddPlayerMoney(src, earnings)
     MySQL.query.await('UPDATE bank_ownership SET pending_earnings = 0 WHERE bank_id = ?', { bankId })
 
-    Notify(src, 'success', 'Has retirado $' .. earnings .. ' en ganancias')
+    Notify(src, 'success', Locale('server.earnings_withdrawn', earnings))
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 
     print(string.format("^2[Bank System] %s retiró $%s de ganancias de %s^7", GetPlayerName(src), earnings,
@@ -213,25 +211,25 @@ RegisterNetEvent('muhaddil_bank:renameBank', function(bankId, newName)
     if not identifier then return end
 
     if not Config.BankOwnership.Enabled then
-        return Notify(src, 'error', 'La gestión de bancos está deshabilitada')
+        return Notify(src, 'error', Locale('server.bank_ownership_disabled'))
     end
 
     if not newName or type(newName) ~= 'string' or #newName < 3 then
-        return Notify(src, 'error', 'Nombre inválido (mínimo 3 caracteres)')
+        return Notify(src, 'error', Locale('server.invalid_bank_name'))
     end
 
     local owner = MySQL.scalar.await('SELECT owner FROM bank_ownership WHERE bank_id = ?', { bankId })
     if not owner then
-        return Notify(src, 'error', 'Este banco no tiene dueño')
+        return Notify(src, 'error', Locale('server.bank_not_owned'))
     end
 
     if owner ~= identifier then
-        return Notify(src, 'error', 'No eres el dueño de este banco')
+        return Notify(src, 'error', Locale('server.bank_not_owned'))
     end
 
     MySQL.query.await('UPDATE bank_ownership SET bank_name = ? WHERE bank_id = ?', { newName, bankId })
 
-    Notify(src, 'success', 'Banco renombrado a: ' .. newName)
+    Notify(src, 'success', Locale('server.bank_renamed', newName))
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 end)
 
