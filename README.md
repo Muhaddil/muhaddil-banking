@@ -1,4 +1,4 @@
-# 🏦 Sistema Bancario Muhaddil - Guía de Uso
+# 🏦 Sistema Bancario Muhaddil - Guía de Uso (Creado con IA)
 
 ## 📋 Descripción
 
