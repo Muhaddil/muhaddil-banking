@@ -1,7 +1,4 @@
-"use client"
-
-import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+import React, { useState, useCallback, useEffect } from "react"
 import { fetchNui } from "./utils/fetchNui"
 import { useNuiEvent } from "./hooks/useNuiEvent"
 import { Toaster } from "react-hot-toast"
@@ -20,7 +17,6 @@ import { StatsView } from "./components/StatsView"
 import { AtmInterface } from "./components/AtmInterface"
 import { CardManager } from "./components/CardManager"
 
-
 type DashboardAction =
   | "deposit"
   | "withdraw"
@@ -36,6 +32,20 @@ interface Account {
   account_name: string
   balance: string
   created_at: string
+}
+
+interface ATMData {
+  cards?: Card[]
+  accounts?: Account[]
+  cash: number
+}
+
+interface Card {
+  id: number
+  account_id: number
+  account_name: string
+  card_number: string
+  is_blocked: boolean | number
 }
 
 interface Transaction {
@@ -258,7 +268,7 @@ const AppContent: React.FC<AppContentProps> = ({
                 data={getChartData()}
                 totalIncome={getTotalIncome()}
                 totalExpense={getTotalExpense()}
-                currentBalance={Number.parseFloat(selectedAccount.balance)}
+                currentBalance={parseFloat(selectedAccount.balance)}
               />
             )}
 
@@ -355,7 +365,7 @@ const AppContent: React.FC<AppContentProps> = ({
                     min="1"
                     max="24"
                     value={formData.loanInstallments}
-                    onChange={(e) => setFormData({ ...formData, loanInstallments: Number.parseInt(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, loanInstallments: parseInt(e.target.value) })}
                     className="w-full"
                   />
                 </div>
@@ -403,7 +413,7 @@ const App = () => {
 
   const selectedAccount =
     selectedAccountId !== null
-      ? [...data.accounts, ...data.sharedAccounts].find(acc => acc.id === selectedAccountId) ?? null
+      ? [...data.accounts, ...data.sharedAccounts].find((acc) => acc.id === selectedAccountId) ?? null
       : null
 
   const [modalState, setModalState] = useState<ModalState>({ type: "none", isOpen: false })
@@ -450,10 +460,7 @@ const App = () => {
     if (allAccounts.length > 0 && selectedAccountId === null) {
       setSelectedAccountId(allAccounts[0].id)
     }
-    if (
-      selectedAccountId !== null &&
-      !allAccounts.some((acc: any) => acc.id === selectedAccountId)
-    ) {
+    if (selectedAccountId !== null && !allAccounts.some((acc: any) => acc.id === selectedAccountId)) {
       setSelectedAccountId(allAccounts.length > 0 ? allAccounts[0].id : null)
     }
   })
@@ -476,34 +483,34 @@ const App = () => {
       if (!selectedAccount || !formData.depositAmount) return toast.error("Monto inválido")
       fetchNui("deposit", {
         accountId: selectedAccount.id,
-        amount: Number.parseFloat(formData.depositAmount),
+        amount: parseFloat(formData.depositAmount),
       })
     } else if (action === "withdraw") {
       if (!selectedAccount || !formData.withdrawAmount) return toast.error("Monto inválido")
       fetchNui("withdraw", {
         accountId: selectedAccount.id,
-        amount: Number.parseFloat(formData.withdrawAmount),
+        amount: parseFloat(formData.withdrawAmount),
       })
     } else if (action === "transfer") {
       if (!selectedAccount || !formData.transferAmount || !formData.transferToAccount)
         return toast.error("Datos incompletos")
       fetchNui("transfer", {
         fromAccountId: selectedAccount.id,
-        toAccountId: Number.parseInt(formData.transferToAccount),
-        amount: Number.parseFloat(formData.transferAmount),
+        toAccountId: parseInt(formData.transferToAccount),
+        amount: parseFloat(formData.transferAmount),
       })
     } else if (action === "loan") {
       if (!formData.loanAmount) return toast.error("Monto inválido")
       fetchNui("requestLoan", {
-        amount: Number.parseFloat(formData.loanAmount),
-        installments: Number.parseInt(formData.loanInstallments.toString()),
+        amount: parseFloat(formData.loanAmount),
+        installments: parseInt(formData.loanInstallments.toString()),
       })
     } else if (action === "addSharedUser") {
       if (!selectedAccount || !formData.targetId) return toast.error("ID de usuario requerido")
-      fetchNui("addSharedUser", { accountId: selectedAccount.id, targetId: Number.parseInt(formData.targetId) })
+      fetchNui("addSharedUser", { accountId: selectedAccount.id, targetId: parseInt(formData.targetId) })
     } else if (action === "removeSharedUser") {
       if (!selectedAccount || !formData.targetId) return toast.error("ID de usuario requerido")
-      fetchNui("removeSharedUser", { accountId: selectedAccount.id, targetId: Number.parseInt(formData.targetId) })
+      fetchNui("removeSharedUser", { accountId: selectedAccount.id, targetId: parseInt(formData.targetId) })
     } else if (action === "deleteAccount") {
       if (!selectedAccount) return toast.error("Cuenta no seleccionada")
       fetchNui("deleteAccount", { accountId: selectedAccount.id })
@@ -533,7 +540,7 @@ const App = () => {
         groupedByDate[date] = { date, income: 0, expense: 0 }
       }
 
-      const amount = Math.abs(Number.parseFloat(transaction.amount))
+      const amount = Math.abs(parseFloat(transaction.amount))
       if (transaction.type === "deposit") {
         groupedByDate[date].income += amount
       } else {
@@ -547,15 +554,15 @@ const App = () => {
   const getTotalIncome = (): number => {
     if (!selectedAccount) return 0
     return data.transactions
-      .filter((t) => t.account_id === selectedAccount.id && Number.parseFloat(t.amount) > 0)
-      .reduce((sum, t) => sum + Number.parseFloat(t.amount), 0)
+      .filter((t) => t.account_id === selectedAccount.id && parseFloat(t.amount) > 0)
+      .reduce((sum, t) => sum + parseFloat(t.amount), 0)
   }
 
   const getTotalExpense = (): number => {
     if (!selectedAccount) return 0
     return data.transactions
-      .filter((t) => t.account_id === selectedAccount.id && Number.parseFloat(t.amount) < 0)
-      .reduce((sum, t) => sum + Math.abs(Number.parseFloat(t.amount)), 0)
+      .filter((t) => t.account_id === selectedAccount.id && parseFloat(t.amount) < 0)
+      .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0)
   }
 
   if (!visible) return null
@@ -587,18 +594,14 @@ const App = () => {
 
 const AppWithATM = () => {
   const [atmVisible, setAtmVisible] = useState(false)
-  const [atmData, setAtmData] = useState<{
-    accounts: { id: number; account_name: string; balance: string }[]
-    cash: number
-    cardNumber?: string
-  } | null>(null)
+  const [atmData, setAtmData] = useState<ATMData | null>(null)
   const [atmRequirePin, setAtmRequirePin] = useState(false)
 
   useNuiEvent("openATM", (event: any) => {
     setAtmData({
+      cards: event.data.cards || [],
       accounts: event.data.accounts || [],
       cash: event.data.cash ?? 0,
-      cardNumber: event.data.cardNumber,
     })
     setAtmRequirePin(event.requirePin ?? false)
     setAtmVisible(true)
@@ -612,9 +615,8 @@ const AppWithATM = () => {
   useNuiEvent("updateATMData", (event: any) => {
     if (atmVisible) {
       setAtmData({
-        accounts: event.data.accounts || [],
+        cards: event.data.cards || [],
         cash: event.data.cash ?? 0,
-        cardNumber: event.data.cardNumber,
       })
     }
   })
@@ -625,8 +627,8 @@ const AppWithATM = () => {
     fetchNui("closeATM")
   }, [])
 
-  const handleATMVerifyPin = async (pin: string): Promise<{ success: boolean; error?: string }> => {
-    return await fetchNui("atmVerifyPin", { pin })
+  const handleATMVerifyPin = async (pin: string, cardId: number, accountId: number): Promise<{ success: boolean; error?: string; accountData?: any }> => {
+    return await fetchNui("atmVerifyPin", { pin, cardId, accountId })
   }
 
   const handleATMDeposit = (accountId: number, amount: number) => {
@@ -659,9 +661,9 @@ const AppWithATM = () => {
         ) : (
           <AtmInterface
             data={{
+              cards: atmData?.cards || [],
               accounts: atmData?.accounts || [],
               cash: atmData?.cash || 0,
-              cardNumber: atmData?.cardNumber,
             }}
             requirePin={atmRequirePin}
             onClose={handleATMClose}

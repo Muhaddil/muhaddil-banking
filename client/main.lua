@@ -348,7 +348,6 @@ exports('OpenBankById', function(bankId)
     return false
 end)
 
--- Abre el banco más cercano al jugador
 exports('OpenNearestBank', function()
     if isOpen then return false end
 

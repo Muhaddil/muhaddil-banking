@@ -52,27 +52,31 @@ lib.callback.register('muhaddil_bank:verifyCardPin', function(source, cardId, pi
         return { success = false, error = 'Tarjeta no encontrada' }
     end
 
+    if card.owner ~= identifier then
+        return { success = false, error = 'Esta tarjeta no te pertenece' }
+    end
+
     local isBlocked = tonumber(card.is_blocked) or 0
     local failedAttempts = tonumber(card.failed_attempts) or 0
     local maxAttempts = Config.Cards.MaxFailedPINAttempts or 3
 
     if isBlocked == 1 then
-        return { success = false, error = 'Tarjeta bloqueada' }
+        return { success = false, error = Locale('server.card_blocked_status') }
     end
 
     if card.pin == pin then
         MySQL.query.await('UPDATE bank_cards SET failed_attempts = 0 WHERE id = ?', { cardId })
-        return { success = true }
+        return { success = true, accountId = card.account_id }
     else
         failedAttempts = failedAttempts + 1
         if failedAttempts >= maxAttempts then
             MySQL.query.await('UPDATE bank_cards SET is_blocked = 1, failed_attempts = ? WHERE id = ?',
                 { failedAttempts, cardId })
-            return { success = false, error = 'Tarjeta bloqueada por demasiados intentos fallidos' }
+            return { success = false, error = Locale('server.card_blocked') }
         else
             MySQL.query.await('UPDATE bank_cards SET failed_attempts = ? WHERE id = ?', { failedAttempts, cardId })
             local remaining = maxAttempts - failedAttempts
-            return { success = false, error = 'PIN incorrecto. Te quedan ' .. remaining .. ' intentos' }
+            return { success = false, error = Locale('server.card_failed_attempts', remaining) }
         end
     end
 end)
@@ -84,27 +88,27 @@ RegisterNetEvent('muhaddil_bank:createCard', function(accountId, pin)
 
     accountId = tonumber(accountId)
     if not accountId then
-        return Notify(src, 'error', 'Cuenta inválida')
+        return Notify(src, 'error', Locale('server.invalid_account'))
     end
 
     if not pin or type(pin) ~= 'string' or #pin ~= 4 or not tonumber(pin) then
-        return Notify(src, 'error', 'El PIN debe tener exactamente 4 dígitos')
+        return Notify(src, 'error', Locale('server.invalid_pin'))
     end
 
     local owner = MySQL.scalar.await('SELECT owner FROM bank_accounts WHERE id = ?', { accountId })
     if owner ~= identifier then
-        return Notify(src, 'error', 'Solo el dueño de la cuenta puede crear tarjetas')
+        return Notify(src, 'error', Locale('server.invalid_owner_card'))
     end
 
     local existingCard = MySQL.scalar.await('SELECT COUNT(*) FROM bank_cards WHERE account_id = ? AND owner = ?',
         { accountId, identifier })
     if existingCard > 0 then
-        return Notify(src, 'error', 'Ya tienes una tarjeta para esta cuenta')
+        return Notify(src, 'error', Locale('server.card_exists'))
     end
 
     local price = Config.Cards.DebitCardPrice or 500
     if not RemovePlayerMoney(src, price) then
-        return Notify(src, 'error', 'Necesitas $' .. price .. ' para crear la tarjeta')
+        return Notify(src, 'error', Locale('server.not_enough_money', price))
     end
 
     local cardNumber = GenerateCardNumber()
@@ -114,7 +118,7 @@ RegisterNetEvent('muhaddil_bank:createCard', function(accountId, pin)
         VALUES (?, ?, ?, ?, 0, 0)
     ]], { cardNumber, accountId, identifier, pin })
 
-    Notify(src, 'success', 'Tarjeta creada exitosamente')
+    Notify(src, 'success', Locale('server.card_created'))
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 end)
 
@@ -124,20 +128,20 @@ RegisterNetEvent('muhaddil_bank:toggleCardBlock', function(cardId, block)
     if not identifier then return end
 
     cardId = tonumber(cardId)
-    if not cardId then return Notify(src, 'error', 'Tarjeta inválida') end
+    if not cardId then return Notify(src, 'error', Locale('server.invalid_card')) end
 
     local cardOwner = MySQL.scalar.await('SELECT owner FROM bank_cards WHERE id = ?', { cardId })
     if cardOwner ~= identifier then
-        return Notify(src, 'error', 'No tienes permisos sobre esta tarjeta')
+        return Notify(src, 'error', Locale('server.invalid_owner_card_perms'))
     end
 
     local blockValue = block and 1 or 0
     MySQL.query.await('UPDATE bank_cards SET is_blocked = ?, failed_attempts = 0 WHERE id = ?', { blockValue, cardId })
 
     if block then
-        Notify(src, 'warning', 'Tarjeta bloqueada')
+        Notify(src, 'warning', Locale('server.card_blocked_status'))
     else
-        Notify(src, 'success', 'Tarjeta desbloqueada')
+        Notify(src, 'success', Locale('server.card_unblocked'))
     end
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 end)
@@ -148,27 +152,27 @@ RegisterNetEvent('muhaddil_bank:changeCardPin', function(cardId, currentPin, new
     if not identifier then return end
 
     cardId = tonumber(cardId)
-    if not cardId then return Notify(src, 'error', 'Tarjeta inválida') end
+    if not cardId then return Notify(src, 'error', Locale('server.invalid_card')) end
 
     if not newPin or type(newPin) ~= 'string' or #newPin ~= 4 or not tonumber(newPin) then
-        return Notify(src, 'error', 'El nuevo PIN debe tener exactamente 4 dígitos')
+        return Notify(src, 'error', Locale('server.invalid_pin'))
     end
 
     local card = MySQL.single.await('SELECT * FROM bank_cards WHERE id = ?', { cardId })
     if not card then
-        return Notify(src, 'error', 'Tarjeta no encontrada')
+        return Notify(src, 'error', Locale('server.card_not_found'))
     end
 
     if card.owner ~= identifier then
-        return Notify(src, 'error', 'No tienes permisos sobre esta tarjeta')
+        return Notify(src, 'error', Locale('server.invalid_owner_card_perms'))
     end
 
     if card.pin ~= currentPin then
-        return Notify(src, 'error', 'PIN actual incorrecto')
+        return Notify(src, 'error', Locale('server.invalid_pin'))
     end
 
     MySQL.query.await('UPDATE bank_cards SET pin = ? WHERE id = ?', { newPin, cardId })
-    Notify(src, 'success', 'PIN cambiado exitosamente')
+    Notify(src, 'success', Locale('server.pin_changed'))
 end)
 
 RegisterNetEvent('muhaddil_bank:deleteCard', function(cardId)
@@ -177,22 +181,22 @@ RegisterNetEvent('muhaddil_bank:deleteCard', function(cardId)
     if not identifier then return end
 
     cardId = tonumber(cardId)
-    if not cardId then return Notify(src, 'error', 'Tarjeta inválida') end
+    if not cardId then return Notify(src, 'error', Locale('server.invalid_card')) end
 
     local cardOwner = MySQL.scalar.await('SELECT owner FROM bank_cards WHERE id = ?', { cardId })
     if cardOwner ~= identifier then
-        return Notify(src, 'error', 'No tienes permisos sobre esta tarjeta')
+        return Notify(src, 'error', Locale('server.invalid_owner_card_perms'))
     end
 
     MySQL.query.await('DELETE FROM bank_cards WHERE id = ?', { cardId })
-    Notify(src, 'success', 'Tarjeta eliminada')
+    Notify(src, 'success', Locale('server.card_deleted'))
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 end)
 
 lib.callback.register('muhaddil_bank:verifyCardForATM', function(source, cardNumber, pin)
     local card = MySQL.single.await('SELECT * FROM bank_cards WHERE card_number = ?', { cardNumber })
     if not card then
-        return { success = false, error = 'Tarjeta no válida' }
+        return { success = false, error = Locale('server.card_not_found') }
     end
 
     local isBlocked = tonumber(card.is_blocked) or 0
@@ -200,7 +204,7 @@ lib.callback.register('muhaddil_bank:verifyCardForATM', function(source, cardNum
     local maxAttempts = Config.Cards.MaxFailedPINAttempts or 3
 
     if isBlocked == 1 then
-        return { success = false, error = 'Tarjeta bloqueada' }
+        return { success = false, error = Locale('server.card_blocked_status') }
     end
 
     if card.pin == pin then
@@ -211,11 +215,11 @@ lib.callback.register('muhaddil_bank:verifyCardForATM', function(source, cardNum
         if failedAttempts >= maxAttempts then
             MySQL.query.await('UPDATE bank_cards SET is_blocked = 1, failed_attempts = ? WHERE id = ?',
                 { failedAttempts, card.id })
-            return { success = false, error = 'Tarjeta bloqueada por seguridad' }
+            return { success = false, error = Locale('server.card_blocked') }
         else
             MySQL.query.await('UPDATE bank_cards SET failed_attempts = ? WHERE id = ?', { failedAttempts, card.id })
             local remaining = maxAttempts - failedAttempts
-            return { success = false, error = 'PIN incorrecto. Te quedan ' .. remaining .. ' intentos' }
+            return { success = false, error = Locale('server.card_failed_attempts', remaining) }
         end
     end
 end)
@@ -227,14 +231,14 @@ RegisterNetEvent('muhaddil_bank:attemptCardTheft', function(targetServerId)
 
     local targetIdentifier = GetPlayerIdentifier(targetServerId)
     if not targetIdentifier then
-        TriggerClientEvent('muhaddil_bank:cardTheftResult', src, false, 'Jugador no encontrado')
+        TriggerClientEvent('muhaddil_bank:cardTheftResult', src, false, Locale('server.player_not_found'))
         return
     end
 
     local stealChance = Config.Cards.StealChance or 75
     if math.random(100) > stealChance then
-        TriggerClientEvent('muhaddil_bank:cardTheftResult', src, false, 'Fallaste al intentar robar')
-        Notify(targetServerId, 'warning', 'Alguien intentó robarte la tarjeta')
+        TriggerClientEvent('muhaddil_bank:cardTheftResult', src, false, Locale('server.card_theft_failed'))
+        Notify(targetServerId, 'warning', Locale('server.card_theft_failed_victim'))
         return
     end
 
@@ -247,28 +251,17 @@ RegisterNetEvent('muhaddil_bank:attemptCardTheft', function(targetServerId)
     ]], { targetIdentifier })
 
     if not card then
-        TriggerClientEvent('muhaddil_bank:cardTheftResult', src, false, 'La víctima no tiene tarjeta')
+        TriggerClientEvent('muhaddil_bank:cardTheftResult', src, false, Locale('server.victim_no_card'))
         return
     end
 
-    Notify(targetServerId, 'error', '¡Te han robado la tarjeta bancaria!')
+    Notify(targetServerId, 'error', Locale('server.card_theft_success_victim'))
 
     TriggerClientEvent('muhaddil_bank:cardTheftResult', src, true, {
         card_number = card.card_number,
         account_id = card.account_id,
         balance = card.balance
     })
-end)
-
-lib.callback.register('muhaddil_bank:getAccountDataById', function(source, accountId)
-    local account = MySQL.single.await('SELECT id, account_name, balance FROM bank_accounts WHERE id = ?', { accountId })
-    if not account then return nil end
-
-    local cash = GetPlayerMoney(source)
-    return {
-        accounts = { account },
-        cash = cash
-    }
 end)
 
 print('^2[Bank System] Cards server loaded^7')
@@ -353,29 +346,29 @@ end)
 
 exports('CreateCard', function(source, accountId, pin)
     local identifier = GetPlayerIdentifier(source)
-    if not identifier then return false, 'Identificador inválido' end
+    if not identifier then return false, Locale('server.invalid_identifier') end
 
     accountId = tonumber(accountId)
-    if not accountId then return false, 'Cuenta inválida' end
+    if not accountId then return false, Locale('server.invalid_account') end
 
     if not pin or type(pin) ~= 'string' or #pin ~= 4 or not tonumber(pin) then
-        return false, 'El PIN debe tener exactamente 4 dígitos'
+        return false, Locale('server.invalid_pin')
     end
 
     local owner = MySQL.scalar.await('SELECT owner FROM bank_accounts WHERE id = ?', { accountId })
     if owner ~= identifier then
-        return false, 'Solo el dueño de la cuenta puede crear tarjetas'
+        return false, Locale('server.invalid_owner_card_perms')
     end
 
     local existingCard = MySQL.scalar.await('SELECT COUNT(*) FROM bank_cards WHERE account_id = ? AND owner = ?',
         { accountId, identifier })
     if existingCard > 0 then
-        return false, 'Ya tienes una tarjeta para esta cuenta'
+        return false, Locale('server.card_exists')
     end
 
     local price = Config.Cards.DebitCardPrice or 500
     if not RemovePlayerMoney(source, price) then
-        return false, 'Necesitas $' .. price .. ' para crear la tarjeta'
+        return false, Locale('server.not_enough_money')
     end
 
     local cardNumber = GenerateCardNumber()
@@ -389,66 +382,90 @@ exports('CreateCard', function(source, accountId, pin)
 end)
 
 exports('ToggleCardBlock', function(source, cardId, block)
-    local identifier = GetPlayerIdentifier(source)
-    if not identifier then return false, 'Identificador inválido' end
+    local src = source
+    local identifier = GetPlayerIdentifier(src)
+    if not identifier then return end
 
     cardId = tonumber(cardId)
-    if not cardId then return false, 'Tarjeta inválida' end
+    if not cardId then return Notify(src, 'error', Locale('server.invalid_card')) end
 
     local cardOwner = MySQL.scalar.await('SELECT owner FROM bank_cards WHERE id = ?', { cardId })
     if cardOwner ~= identifier then
-        return false, 'No tienes permisos sobre esta tarjeta'
+        return Notify(src, 'error', Locale('server.invalid_owner_card_perms'))
     end
 
     local blockValue = block and 1 or 0
     MySQL.query.await('UPDATE bank_cards SET is_blocked = ?, failed_attempts = 0 WHERE id = ?', { blockValue, cardId })
 
+    if block then
+        Notify(src, 'warning', Locale('server.card_blocked_status'))
+    else
+        Notify(src, 'success', Locale('server.card_unblocked'))
+    end
     return true
 end)
 
 exports('ChangeCardPin', function(source, cardId, currentPin, newPin)
-    local identifier = GetPlayerIdentifier(source)
-    if not identifier then return false, 'Identificador inválido' end
+    local src = source
+    local identifier = GetPlayerIdentifier(src)
+    if not identifier then return end
 
     cardId = tonumber(cardId)
-    if not cardId then return false, 'Tarjeta inválida' end
+    if not cardId then return Notify(src, 'error', Locale('server.invalid_card')) end
 
     if not newPin or type(newPin) ~= 'string' or #newPin ~= 4 or not tonumber(newPin) then
-        return false, 'El nuevo PIN debe tener exactamente 4 dígitos'
+        return Notify(src, 'error', Locale('server.invalid_pin'))
     end
 
     local card = MySQL.single.await('SELECT * FROM bank_cards WHERE id = ?', { cardId })
-    if not card then return false, 'Tarjeta no encontrada' end
-    if card.owner ~= identifier then return false, 'No tienes permisos sobre esta tarjeta' end
-    if card.pin ~= currentPin then return false, 'PIN actual incorrecto' end
+    if not card then
+        return Notify(src, 'error', Locale('server.card_not_found'))
+    end
+
+    if card.owner ~= identifier then
+        return Notify(src, 'error', Locale('server.invalid_owner_card_perms'))
+    end
+
+    if card.pin ~= currentPin then
+        return Notify(src, 'error', Locale('server.invalid_pin'))
+    end
 
     MySQL.query.await('UPDATE bank_cards SET pin = ? WHERE id = ?', { newPin, cardId })
+    Notify(src, 'success', Locale('server.pin_changed'))
     return true
 end)
 
 exports('DeleteCard', function(source, cardId)
-    local identifier = GetPlayerIdentifier(source)
-    if not identifier then return false, 'Identificador inválido' end
+    local src = source
+    local identifier = GetPlayerIdentifier(src)
+    if not identifier then return end
 
     cardId = tonumber(cardId)
-    if not cardId then return false, 'Tarjeta inválida' end
+    if not cardId then return Notify(src, 'error', Locale('server.invalid_card')) end
 
     local cardOwner = MySQL.scalar.await('SELECT owner FROM bank_cards WHERE id = ?', { cardId })
-    if cardOwner ~= identifier then return false, 'No tienes permisos sobre esta tarjeta' end
+    if cardOwner ~= identifier then
+        return Notify(src, 'error', Locale('server.invalid_owner_card_perms'))
+    end
 
     MySQL.query.await('DELETE FROM bank_cards WHERE id = ?', { cardId })
+    Notify(src, 'success', Locale('server.card_deleted'))
     return true
 end)
 
 exports('VerifyCardForATM', function(cardNumber, pin)
     local card = MySQL.single.await('SELECT * FROM bank_cards WHERE card_number = ?', { cardNumber })
-    if not card then return { success = false, error = 'Tarjeta no válida' } end
+    if not card then
+        return { success = false, error = Locale('server.card_not_found') }
+    end
 
     local isBlocked = tonumber(card.is_blocked) or 0
     local failedAttempts = tonumber(card.failed_attempts) or 0
     local maxAttempts = Config.Cards.MaxFailedPINAttempts or 3
 
-    if isBlocked == 1 then return { success = false, error = 'Tarjeta bloqueada' } end
+    if isBlocked == 1 then
+        return { success = false, error = Locale('server.card_blocked_status') }
+    end
 
     if card.pin == pin then
         MySQL.query.await('UPDATE bank_cards SET failed_attempts = 0 WHERE id = ?', { card.id })
@@ -458,14 +475,11 @@ exports('VerifyCardForATM', function(cardNumber, pin)
         if failedAttempts >= maxAttempts then
             MySQL.query.await('UPDATE bank_cards SET is_blocked = 1, failed_attempts = ? WHERE id = ?',
                 { failedAttempts, card.id })
-            return { success = false, error = 'Tarjeta bloqueada por seguridad' }
+            return { success = false, error = Locale('server.card_blocked') }
         else
             MySQL.query.await('UPDATE bank_cards SET failed_attempts = ? WHERE id = ?', { failedAttempts, card.id })
-            return {
-                success = false,
-                error = 'PIN incorrecto. Te quedan ' ..
-                    (maxAttempts - failedAttempts) .. ' intentos'
-            }
+            local remaining = maxAttempts - failedAttempts
+            return { success = false, error = Locale('server.card_failed_attempts', remaining) }
         end
     end
 end)
@@ -475,5 +489,8 @@ exports('GetAccountDataById', function(source, accountId)
     if not account then return nil end
 
     local cash = GetPlayerMoney(source)
-    return { accounts = { account }, cash = cash }
+    return {
+        account = account,
+        cash = cash
+    }
 end)

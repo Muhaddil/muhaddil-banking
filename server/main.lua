@@ -549,7 +549,7 @@ RegisterNetEvent('muhaddil_bank:purchaseBank', function(bankId)
     Notify(src, 'success', Locale('server.bank_purchased', bankName))
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 
-    print(string.format("^2[Bank System] %s compró el banco %s (%s)^7", GetPlayerName(src), bankName, bankId))
+    -- print(string.format("^2[Bank System] %s compró el banco %s (%s)^7", GetPlayerName(src), bankName, bankId))
 end)
 
 RegisterCommand(Config.OpenCommand, function(source, args, rawCommand)

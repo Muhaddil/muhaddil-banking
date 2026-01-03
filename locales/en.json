@@ -156,7 +156,14 @@
     "withdrawMoney": "Withdraw Money",
     "transferMoney": "Transfer Money",
     "targetAccount": "Target Account",
-    "selectAccount": "Select account..."
+    "selectAccount": "Select account...",
+    "selectCard": "Select your card",
+    "verifyPin": "Verify PIN",
+    "linkedAccount": "Linked Account",
+    "balance": "Balance",
+    "noAccounts": "No accounts available",
+    "verifying": "Verifying access...",
+    "loadingAccount": "Loading account..."
   },
   "cards": {
     "title": "My Cards",
@@ -234,6 +241,11 @@
     "free": "Free"
   },
   "server": {
+    "card_theft_failed": "You failed in your attempt to steal the card",
+    "card_theft_failed_victim": "Someone tried unsuccessfully to steal your card",
+    "victim_no_card": "The victim does not have a card",
+    "card_theft_success": "You successfully stole the card",
+    "card_theft_success_victim": "Your card was stolen",
     "account_created": "Account created: {0}",
     "invalid_account_name": "Invalid account name",
     "max_accounts_reached": "You have reached the account limit ({0})",
@@ -265,6 +277,8 @@
     "loan_not_found": "Loan not found",
     "payment_completed": "Payment completed. Remaining: ${0}",
     "insufficient_money": "You don't have enough money",
+    "invalid_name": "Invalid name",
+    "not_owner": "You are not the owner",
     "bank_ownership_disabled": "Bank ownership is disabled",
     "bank_not_purchasable": "This bank is not available for purchase",
     "bank_already_owned": "This bank already has an owner",
@@ -289,10 +303,18 @@
     "card_created": "Card created successfully",
     "card_not_found": "Card not found",
     "card_blocked_status": "Your card is blocked",
+    "card_failed_attempts": "Incorrect PIN. You have {0} attempts remaining.",
     "card_unblocked": "Card unblocked",
+    "invalid_pin": "The PIN must have exactly 4 digits.",
+    "invalid_card": "Invalid card",
+    "invalid_owner_card_perms": "You do not have permissions on this card",
+    "invalid_owner_card": "Only the owner of the account can create cards",
+    "card_exists": "You already have a card for this account",
+    "invalid_identifier": "Invalid identifier",
     "pin_changed": "PIN changed successfully",
     "card_deleted": "Card deleted",
     "player_synced": "Player synchronized",
+    "syncing_all_players": "Synchronizing all players...",
     "synced": "Synchronized",
     "check_console": "Check console",
     "atm_deposit_completed": "ATM deposit completed",
@@ -301,7 +323,14 @@
     "efectiveDeposit": "Deposit in cash",
     "efectiveWithdraw": "Withdraw in cash",
     "externalDeposit": "External deposit +${0}",
-    "externalWithdraw": "External withdrawal -${0}"
+    "externalWithdraw": "External withdrawal -${0}",
+    "withdraw_limit": "Withdrawal limit: ${0}",
+    "atm_withdrawal": "ATM withdrawal",
+    "atm_fee": "Commission for ATM withdrawal",
+    "no_permissions": "You do not have permissions",
+    "deposit_limit": "Deposit limit: ${0}",
+    "atm_transfer_out": "ATM transfer out",
+    "atm_transfer_in": "ATM transfer in"
   },
   "client": {
     "bank_connection_error": "Error connecting to bank",
@@ -318,6 +347,8 @@
     "atm_connection_error": "Error connecting to ATM",
     "use_atm": "Use ATM",
     "open_bank": "[E] - Open Bank",
-    "open": "Open {0}"
+    "open": "Open {0}",
+    "closing_atm": "Closing session...",
+    "opening_atm": "Opening session..."
   }
 }

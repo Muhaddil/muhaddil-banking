@@ -54,7 +54,7 @@ function OpenATM()
 
     local success = lib.progressBar({
         duration = 2500,
-        label = 'Accediendo al cajero...',
+        label = Locale('client.opening_atm'),
         useWhileDead = false,
         canCancel = true,
         disable = {
@@ -70,26 +70,16 @@ function OpenATM()
 
     if not success then return end
 
-    if Config.Cards.Enabled and Config.Cards.RequireCardForATM then
-        local hasCard = lib.callback.await('muhaddil_bank:hasCard', false)
-        if not hasCard then
-            return lib.notify({ type = 'error', description = Locale('client.need_debit_card') })
-        end
-
-        currentCard = lib.callback.await('muhaddil_bank:getPlayerCard', false)
-        if not currentCard then
-            return lib.notify({ type = 'error', description = Locale('client.card_not_found') })
-        end
-
-        if currentCard.is_blocked then
-            return lib.notify({ type = 'error', description = Locale('client.card_blocked') })
-        end
-    end
-
     local data = lib.callback.await('muhaddil_bank:getATMData', false)
 
     if not data then
         return lib.notify({ type = 'error', description = Locale('client.atm_connection_error') })
+    end
+
+    if Config.Cards.Enabled and Config.Cards.RequireCardForATM then
+        if not data.cards or #data.cards == 0 then
+            return lib.notify({ type = 'error', description = Locale('client.need_debit_card') })
+        end
     end
 
     isATMOpen = true
@@ -108,7 +98,7 @@ function CloseATM()
 
     local success = lib.progressBar({
         duration = 1500,
-        label = 'Cerrando sesión...',
+        label = Locale('client.closing_atm'),
         useWhileDead = false,
         canCancel = false,
         disable = {
@@ -138,13 +128,15 @@ RegisterNUICallback('closeATM', function(data, cb)
 end)
 
 RegisterNUICallback('atmVerifyPin', function(data, cb)
-    if not currentCard then
-        cb({ success = false, error = 'No hay tarjeta insertada' })
-        return
-    end
+    local result = lib.callback.await('muhaddil_bank:verifyCardPin', false, data.cardId, data.pin)
 
-    local result = lib.callback.await('muhaddil_bank:verifyCardPin', false, currentCard.id, data.pin)
-    cb(result)
+    if result.success then
+        currentCard = data.cardId
+        local accountData = lib.callback.await('muhaddil_bank:getAccountDataById', false, data.accountId)
+        cb({ success = true, accountData = accountData })
+    else
+        cb({ success = false, error = result.error })
+    end
 end)
 
 RegisterNUICallback('atmDeposit', function(data, cb)

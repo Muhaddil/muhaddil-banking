@@ -143,14 +143,6 @@ function ImportFrameworkBank(source, accountId)
             VALUES (?, ?, ?, ?)
         ]], { accountId, 'import', frameworkBankMoney, 'Importación inicial' })
 
-        if FrameWork == 'esx' then
-            local xPlayer = GetPlayer(source)
-            if xPlayer then xPlayer.setAccountMoney('bank', 0) end
-        elseif FrameWork == 'qb' then
-            local Player = GetPlayer(source)
-            if Player then Player.Functions.SetMoney('bank', 0) end
-        end
-
         lastKnownBalance[identifier] = frameworkBankMoney
 
         return true
@@ -252,7 +244,7 @@ end
 
 RegisterCommand('banksync', function(source, args, rawCommand)
     if source == 0 then
-        print('^3[Bank Sync] Sincronizando todos...^7')
+        print('^3[Bank Sync] ' .. Locale('server.syncing_all_players') .. '^7')
         for _, playerId in ipairs(GetPlayers()) do
             local src = tonumber(playerId)
             if src then
@@ -260,7 +252,7 @@ RegisterCommand('banksync', function(source, args, rawCommand)
                 DetectExternalChanges(src)
             end
         end
-        print('^2[Bank Sync] Completado^7')
+        print('^2[Bank Sync] ' .. Locale('server.synced') .. '^7')
     else
         if hasPermission(source) then
             if args[1] then
@@ -268,14 +260,14 @@ RegisterCommand('banksync', function(source, args, rawCommand)
                 if targetId and GetPlayerName(targetId) then
                     SyncFrameworkBank(targetId)
                     DetectExternalChanges(targetId)
-                    Notify(source, 'success', 'Jugador sincronizado')
+                    Notify(source, 'success', Locale('server.player_synced'))
                 else
-                    Notify(source, 'error', 'Jugador no encontrado')
+                    Notify(source, 'error', Locale('server.player_not_found'))
                 end
             else
                 SyncFrameworkBank(source)
                 DetectExternalChanges(source)
-                Notify(source, 'success', 'Sincronizado')
+                Notify(source, 'success', Locale('server.player_synced'))
             end
         end
     end
@@ -299,7 +291,7 @@ RegisterCommand('bankstatus', function(source, args, rawCommand)
     print('^2Diff:^7 $' .. string.format('%.2f', frameworkBalance - customBalance))
     print('^3======================================^7')
 
-    Notify(source, 'info', 'Revisa consola')
+    Notify(source, 'info', Locale('server.check_console'))
 end, false)
 
 exports('SyncFrameworkBank', SyncFrameworkBank)

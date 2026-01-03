@@ -138,8 +138,8 @@ RegisterNetEvent('muhaddil_bank:transferBank', function(bankId, targetPlayerId)
     TriggerClientEvent('muhaddil_bank:refreshData', src)
     TriggerClientEvent('muhaddil_bank:refreshData', targetPlayerId)
 
-    print(string.format("^3[Bank System] %s transfirió %s a %s^7", GetPlayerName(src), bank.bank_name,
-        GetPlayerName(targetPlayerId)))
+    -- print(string.format("^3[Bank System] %s transfirió %s a %s^7", GetPlayerName(src), bank.bank_name,
+    --     GetPlayerName(targetPlayerId)))
 end)
 
 RegisterNetEvent('muhaddil_bank:updateCommission', function(bankId, newRate)
@@ -438,15 +438,15 @@ end)
 
 exports('RenameBank', function(source, bankId, newName)
     if not Config.BankOwnership.Enabled then
-        return false, 'La gestión de bancos está deshabilitada'
+        return false, Locale('server.bank_ownership_disabled')
     end
 
     if not newName or type(newName) ~= 'string' or #newName < 3 then
-        return false, 'Nombre inválido'
+        return false, Locale('server.invalid_name')
     end
 
     local identifier = GetPlayerIdentifier(source)
-    if not identifier then return false, 'Identificador inválido' end
+    if not identifier then return false, Locale('server.invalid_identifier') end
 
     local owner = MySQL.scalar.await(
         'SELECT owner FROM bank_ownership WHERE bank_id = ?',
@@ -454,7 +454,7 @@ exports('RenameBank', function(source, bankId, newName)
     )
 
     if owner ~= identifier then
-        return false, 'No eres el dueño de este banco'
+        return false, Locale('server.not_owner')
     end
 
     MySQL.query.await(

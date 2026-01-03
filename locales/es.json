@@ -152,7 +152,14 @@
     "withdrawMoney": "Retirar Dinero",
     "transferMoney": "Transferir Dinero",
     "targetAccount": "Cuenta Destino",
-    "selectAccount": "Seleccionar cuenta..."
+    "selectAccount": "Seleccionar cuenta...",
+    "selectCard": "Selecciona tu tarjeta",
+    "verifyPin": "Verificación de PIN",
+    "linkedAccount": "Cuenta vinculada",
+    "balance": "Saldo",
+    "noAccounts": "No tienes cuentas disponibles",
+    "verifying": "Verificando acceso...",
+    "loadingAccount": "Cargando cuenta..."
   },
   "cards": {
     "title": "Mis Tarjetas",
@@ -230,6 +237,11 @@
     "free": "Gratis"
   },
   "server": {
+    "card_theft_failed": "Fallaste al intentar robar la tarjeta",
+    "card_theft_failed_victim": "Alguien intentó robarte la tarjeta sin éxito",
+    "victim_no_card": "La víctima no tiene tarjeta",
+    "card_theft_success": "Has robado la tarjeta",
+    "card_theft_success_victim": "Tu tarjeta fue robada",
     "account_created": "Cuenta creada: {0}",
     "invalid_account_name": "Nombre de cuenta inválido",
     "max_accounts_reached": "Has alcanzado el límite de cuentas ({0})",
@@ -261,6 +273,8 @@
     "loan_not_found": "Préstamo no encontrado",
     "payment_completed": "Pago realizado. Restante: ${0}",
     "insufficient_money": "No tienes suficiente dinero",
+    "invalid_name": "Nombre inválido",
+    "not_owner": "No eres el dueño",
     "bank_ownership_disabled": "La compra de bancos está deshabilitada",
     "bank_not_purchasable": "Este banco no está disponible para compra",
     "bank_already_owned": "Este banco ya tiene dueño",
@@ -285,10 +299,19 @@
     "card_created": "Tarjeta creada exitosamente",
     "card_not_found": "Tarjeta no encontrada",
     "card_blocked_status": "Tu tarjeta está bloqueada",
+    "card_failed_attempts": "PIN incorrecto. Te quedan {0} intentos",
     "card_unblocked": "Tarjeta desbloqueada",
+    "invalid_pin": "El PIN debe tener exactamente 4 dígitos",
+    "invalid_card": "Tarjeta inválida",
+    "invalid_identifier": "Identificador inválido",
+    "invalid_owner_card": "Solo el dueño de la cuenta puede crear tarjetas",
+    "invalid_owner_card_perms": "No tienes permisos sobre esta tarjeta",
+    "card_exists": "Ya tienes una tarjeta para esta cuenta",
+    "not_enough_money": "No tienes suficiente dinero (${0})",
     "pin_changed": "PIN cambiado exitosamente",
     "card_deleted": "Tarjeta eliminada",
     "player_synced": "Jugador sincronizado",
+    "syncing_all_players": "Sincronizando todos los jugadores...",
     "synced": "Sincronizado",
     "check_console": "Revisa consola",
     "atm_deposit_completed": "Depósito en cajero realizado",
@@ -297,7 +320,15 @@
     "efectiveDeposit": "Depósito en efectivo",
     "efectiveWithdraw": "Retiro en efectivo",
     "externalDeposit": "Depósito externo +${0}",
-    "externalWithdraw": "Cargo externo -${0}"
+    "externalWithdraw": "Cargo externo -${0}",
+    "withdraw_limit": "Límite de retiro: ${0}",
+    "atm_withdrawal": "Retiro por cajero automático",
+    "atm_fee": "Comisión ATM",
+    "withdrawal_completed": "Retiro realizado",
+    "no_permissions": "No tienes permisos",
+    "deposit_limit": "Límite de depósito: ${0}",
+    "atm_transfer_out": "Transferencia ATM",
+    "atm_transfer_in": "Transferencia ATM"
   },
   "client": {
     "bank_connection_error": "Error al conectar con el banco",
@@ -314,6 +345,8 @@
     "atm_connection_error": "Error al conectar con el cajero",
     "use_atm": "Usar Cajero",
     "open_bank": "[E] - Abrir Banco",
-    "open": "Abrir {0}"
+    "open": "Abrir {0}",
+    "closing_atm": "Cerrando sesión...",
+    "opening_atm": "Accediendo al cajero..."
   }
 }

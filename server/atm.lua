@@ -2,27 +2,53 @@ lib.callback.register('muhaddil_bank:getATMData', function(source)
     local identifier = GetPlayerIdentifier(source)
     if not identifier then return nil end
 
-    local ownedAccounts = MySQL.query.await('SELECT id, account_name, balance FROM bank_accounts WHERE owner = ?',
-        { identifier })
+    local cash = GetPlayerMoney(source)
+    local result = { cash = cash }
 
-    local sharedAccounts = MySQL.query.await([[
-        SELECT ba.id, ba.account_name, ba.balance FROM bank_accounts ba
-        INNER JOIN bank_shared_access bsa ON ba.id = bsa.account_id
-        WHERE bsa.user_identifier = ?
-    ]], { identifier })
+    if Config.Cards.Enabled and Config.Cards.RequireCardForATM then
+        local cards = MySQL.query.await([[
+            SELECT bc.*, ba.account_name, ba.balance
+            FROM bank_cards bc
+            INNER JOIN bank_accounts ba ON bc.account_id = ba.id
+            WHERE bc.owner = ?
+            ORDER BY bc.created_at DESC
+        ]], { identifier })
 
-    local allAccounts = {}
-    for _, acc in ipairs(ownedAccounts or {}) do
-        table.insert(allAccounts, acc)
+        result.cards = cards or {}
+    else
+        local ownedAccounts = MySQL.query.await(
+            'SELECT id, account_name, balance FROM bank_accounts WHERE owner = ?',
+            { identifier }
+        )
+
+        local sharedAccounts = MySQL.query.await([[
+            SELECT ba.id, ba.account_name, ba.balance
+            FROM bank_accounts ba
+            INNER JOIN bank_shared_access bsa ON ba.id = bsa.account_id
+            WHERE bsa.user_identifier = ?
+        ]], { identifier })
+
+        local allAccounts = {}
+        for _, acc in ipairs(ownedAccounts or {}) do
+            table.insert(allAccounts, acc)
+        end
+        for _, acc in ipairs(sharedAccounts or {}) do
+            table.insert(allAccounts, acc)
+        end
+
+        result.accounts = allAccounts
     end
-    for _, acc in ipairs(sharedAccounts or {}) do
-        table.insert(allAccounts, acc)
-    end
+
+    return result
+end)
+
+lib.callback.register('muhaddil_bank:getAccountDataById', function(source, accountId)
+    local account = MySQL.single.await('SELECT id, account_name, balance FROM bank_accounts WHERE id = ?', { accountId })
+    if not account then return nil end
 
     local cash = GetPlayerMoney(source)
-
     return {
-        accounts = allAccounts,
+        account = account,
         cash = cash
     }
 end)
@@ -70,9 +96,10 @@ RegisterNetEvent('muhaddil_bank:atmDeposit', function(accountId, amount)        
     end
 
     if tonumber(result) and result > 0 then
-        Notify(src, 'success', 'Depósito realizado. Comisión: $' .. result)
+        Notify(src, 'success',
+            Locale('server.atm_deposit_completed') .. '. ' .. Locale('server.atm_fee') .. ': $' .. result)
     else
-        Notify(src, 'success', 'Depósito realizado')
+        Notify(src, 'success', Locale('server.atm_deposit_completed'))
     end
 
     TriggerClientEvent('muhaddil_bank:refreshATMData', src)
@@ -85,11 +112,11 @@ RegisterNetEvent('muhaddil_bank:atmWithdraw', function(accountId, amount)
 
     amount = tonumber(amount)
     if not amount or amount <= 0 then
-        return Notify(src, 'error', 'Cantidad inválida')
+        return Notify(src, 'error', Locale('server.invalid_amount'))
     end
 
     if amount > Config.ATMs.WithdrawLimit then
-        return Notify(src, 'error', 'Límite de retiro: $' .. Config.ATMs.WithdrawLimit)
+        return Notify(src, 'error', Locale('server.withdraw_limit', Config.ATMs.WithdrawLimit))
     end
 
     local fee = Config.ATMs.Fee or 0
@@ -102,11 +129,11 @@ RegisterNetEvent('muhaddil_bank:atmWithdraw', function(accountId, amount)
 
     balance = tonumber(balance)
     if not balance then
-        return Notify(src, 'error', 'Cuenta no encontrada')
+        return Notify(src, 'error', Locale('server.account_not_found'))
     end
 
     if balance < totalNeeded then
-        return Notify(src, 'error', 'Saldo insuficiente (incluye comisión de $' .. fee .. ')')
+        return Notify(src, 'error', Locale('server.insufficient_balance', fee))
     end
 
     MySQL.query.await(
@@ -118,17 +145,17 @@ RegisterNetEvent('muhaddil_bank:atmWithdraw', function(accountId, amount)
 
     MySQL.insert.await(
         'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-        { accountId, 'atm_withdrawal', -amount, 'Retiro por cajero ATM' }
+        { accountId, 'atm_withdrawal', -amount, Locale('server.atm_withdrawal') }
     )
 
     if fee > 0 then
         MySQL.insert.await(
             'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-            { accountId, 'atm_fee', -fee, 'Comisión cajero ATM' }
+            { accountId, 'atm_fee', -fee, Locale('server.atm_fee') }
         )
-        Notify(src, 'success', 'Retiro realizado. Comisión ATM: $' .. fee)
+        Notify(src, 'success', Locale('server.withdrawal_completed') .. '. ' .. Locale('server.atm_fee') .. ': $' .. fee)
     else
-        Notify(src, 'success', 'Retiro realizado')
+        Notify(src, 'success', Locale('server.withdrawal_completed'))
     end
     TriggerClientEvent('muhaddil_bank:refreshATMData', src)
 end)
@@ -143,11 +170,11 @@ RegisterNetEvent('muhaddil_bank:atmTransfer', function(fromAccountId, toAccountI
     amount = tonumber(amount)
 
     if not fromAccountId or not toAccountId then
-        return Notify(src, 'error', 'Cuenta inválida')
+        return Notify(src, 'error', Locale('server.invalid_account'))
     end
 
     if not amount or amount <= 0 then
-        return Notify(src, 'error', 'Cantidad inválida')
+        return Notify(src, 'error', Locale('server.invalid_amount'))
     end
 
     local account = MySQL.single.await([[
@@ -159,17 +186,17 @@ RegisterNetEvent('muhaddil_bank:atmTransfer', function(fromAccountId, toAccountI
     ]], { identifier, fromAccountId, identifier, identifier })
 
     if not account then
-        return Notify(src, 'error', 'No tienes permisos en la cuenta origen')
+        return Notify(src, 'error', Locale('server.no_permissions'))
     end
 
     account.balance = tonumber(account.balance)
     if not account.balance or account.balance < amount then
-        return Notify(src, 'error', 'Saldo insuficiente')
+        return Notify(src, 'error', Locale('server.insufficient_balance'))
     end
 
     local targetExists = MySQL.scalar.await('SELECT COUNT(*) FROM bank_accounts WHERE id = ?', { toAccountId })
     if not targetExists or targetExists == 0 then
-        return Notify(src, 'error', 'Cuenta destino no existe')
+        return Notify(src, 'error', Locale('server.account_not_found'))
     end
 
     local success = MySQL.transaction.await({
@@ -183,19 +210,19 @@ RegisterNetEvent('muhaddil_bank:atmTransfer', function(fromAccountId, toAccountI
         },
         {
             query = 'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-            values = { fromAccountId, 'atm_transfer_out', -amount, 'Transferencia ATM a cuenta #' .. toAccountId }
+            values = { fromAccountId, 'atm_transfer_out', -amount, Locale('server.atm_transfer_completed') .. ' #' .. toAccountId }
         },
         {
             query = 'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-            values = { toAccountId, 'atm_transfer_in', amount, 'Transferencia ATM desde cuenta #' .. fromAccountId }
+            values = { toAccountId, 'atm_transfer_in', amount, Locale('server.atm_transfer_completed') .. ' #' .. fromAccountId }
         }
     })
 
     if not success then
-        return Notify(src, 'error', 'Error al procesar la transferencia')
+        return Notify(src, 'error', Locale('server.transfer_error'))
     end
 
-    Notify(src, 'success', 'Transferencia realizada')
+    Notify(src, 'success', Locale('server.transfer_completed'))
     TriggerClientEvent('muhaddil_bank:refreshATMData', src)
 end)
 
@@ -205,47 +232,33 @@ exports('GetATMData', function(source)
     local identifier = GetPlayerIdentifier(source)
     if not identifier then return nil end
 
-    local ownedAccounts = MySQL.query.await(
-        'SELECT id, account_name, balance FROM bank_accounts WHERE owner = ?',
-        { identifier }
-    )
-
-    local sharedAccounts = MySQL.query.await([[
-        SELECT ba.id, ba.account_name, ba.balance
-        FROM bank_accounts ba
-        INNER JOIN bank_shared_access bsa ON ba.id = bsa.account_id
-        WHERE bsa.user_identifier = ?
+    local cards = MySQL.query.await([[
+        SELECT bc.*, ba.account_name, ba.balance
+        FROM bank_cards bc
+        INNER JOIN bank_accounts ba ON bc.account_id = ba.id
+        WHERE bc.owner = ?
+        ORDER BY bc.created_at DESC
     ]], { identifier })
 
-    local accounts = {}
-
-    for _, acc in ipairs(ownedAccounts or {}) do
-        accounts[#accounts + 1] = acc
-    end
-
-    for _, acc in ipairs(sharedAccounts or {}) do
-        accounts[#accounts + 1] = acc
-    end
-
     return {
-        accounts = accounts,
+        cards = cards or {},
         cash = GetPlayerMoney(source)
     }
 end)
 
 exports('ATMDeposit', function(source, accountId, amount)
     amount = tonumber(amount)
-    if not amount or amount <= 0 then return false, 'Cantidad inválida' end
+    if not amount or amount <= 0 then return false, Locale('server.invalid_amount') end
 
     if amount > Config.ATMs.DepositLimit then
-        return false, 'Límite de depósito: $' .. Config.ATMs.DepositLimit
+        return false, Locale('server.deposit_limit', Config.ATMs.DepositLimit)
     end
 
     local fee = Config.ATMs.Fee or 0
     local total = amount + fee
 
     if not RemovePlayerMoney(source, total) then
-        return false, 'No tienes suficiente efectivo'
+        return false, Locale('server.insufficient_balance')
     end
 
     MySQL.query.await(
@@ -263,10 +276,10 @@ end)
 
 exports('ATMWithdraw', function(source, accountId, amount)
     amount = tonumber(amount)
-    if not amount or amount <= 0 then return false, 'Cantidad inválida' end
+    if not amount or amount <= 0 then return false, Locale('server.invalid_amount') end
 
     if amount > Config.ATMs.WithdrawLimit then
-        return false, 'Límite de retiro: $' .. Config.ATMs.WithdrawLimit
+        return false, Locale('server.withdraw_limit', Config.ATMs.WithdrawLimit)
     end
 
     local fee = Config.ATMs.Fee or 0
@@ -278,11 +291,11 @@ exports('ATMWithdraw', function(source, accountId, amount)
     ))
 
     if not balance then
-        return false, 'Cuenta no encontrada'
+        return false, Locale('server.account_not_found')
     end
 
     if balance < total then
-        return false, 'Saldo insuficiente'
+        return false, Locale('server.insufficient_balance')
     end
 
     MySQL.query.await(
@@ -294,13 +307,13 @@ exports('ATMWithdraw', function(source, accountId, amount)
 
     MySQL.insert.await(
         'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-        { accountId, 'atm_withdrawal', -amount, 'Retiro por cajero ATM' }
+        { accountId, 'atm_withdrawal', -amount, Locale('server.atm_withdrawal') }
     )
 
     if fee > 0 then
         MySQL.insert.await(
             'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-            { accountId, 'atm_fee', -fee, 'Comisión cajero ATM' }
+            { accountId, 'atm_fee', -fee, Locale('server.atm_fee') }
         )
     end
 
@@ -309,14 +322,14 @@ end)
 
 exports('ATMTransfer', function(source, fromAccountId, toAccountId, amount)
     local identifier = GetPlayerIdentifier(source)
-    if not identifier then return false, 'Identificador inválido' end
+    if not identifier then return false, Locale('server.invalid_identifier') end
 
     fromAccountId = tonumber(fromAccountId)
     toAccountId = tonumber(toAccountId)
     amount = tonumber(amount)
 
     if not fromAccountId or not toAccountId or not amount or amount <= 0 then
-        return false, 'Datos inválidos'
+        return false, Locale('server.invalid_amount')
     end
 
     local account = MySQL.single.await([[
@@ -328,7 +341,7 @@ exports('ATMTransfer', function(source, fromAccountId, toAccountId, amount)
     ]], { identifier, fromAccountId, identifier, identifier })
 
     if not account or tonumber(account.balance) < amount then
-        return false, 'Saldo insuficiente o sin permisos'
+        return false, Locale('server.insufficient_balance')
     end
 
     local targetExists = MySQL.scalar.await(
@@ -337,7 +350,7 @@ exports('ATMTransfer', function(source, fromAccountId, toAccountId, amount)
     )
 
     if targetExists == 0 then
-        return false, 'Cuenta destino no existe'
+        return false, Locale('server.account_not_found')
     end
 
     local ok = MySQL.transaction.await({
@@ -351,16 +364,16 @@ exports('ATMTransfer', function(source, fromAccountId, toAccountId, amount)
         },
         {
             query = 'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-            values = { fromAccountId, 'atm_transfer_out', -amount, 'Transferencia ATM' }
+            values = { fromAccountId, 'atm_transfer_out', -amount, Locale('server.atm_transfer_out') }
         },
         {
             query = 'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-            values = { toAccountId, 'atm_transfer_in', amount, 'Transferencia ATM' }
+            values = { toAccountId, 'atm_transfer_in', amount, Locale('server.atm_transfer_in') }
         }
     })
 
     if not ok then
-        return false, 'Error al procesar la transferencia'
+        return false, Locale('server.transfer_error')
     end
 
     return true

@@ -4,7 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { Card } from "./ui/Card"
 import { Button } from "./ui/Button"
-import { useLocale } from "../hooks/useLocale" // Added for i18n support
+import { useLocale } from "../hooks/useLocale"
 import {
     Building2,
     TrendingUp,
@@ -49,7 +49,7 @@ interface BankManagerProps {
 type ModalType = "none" | "transfer" | "commission" | "rename" | "sell"
 
 export const BankManager: React.FC<BankManagerProps> = ({ ownedBanks, availableBanks = [] }) => {
-    const { t } = useLocale() // Fixed to destructure t from useLocale
+    const { t } = useLocale()
     const [selectedBank, setSelectedBank] = useState<OwnedBank | null>(null)
     const [modalType, setModalType] = useState<ModalType>("none")
     const [formData, setFormData] = useState({

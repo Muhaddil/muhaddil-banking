@@ -3,7 +3,7 @@ Config = {}
 Config.FrameWork = "auto" -- auto, esx, qb
 Config.ESXVer = "new"     -- new, old
 Config.OpenCommand = "banco"
-Config.Locale = 'en'
+Config.Locale = 'es'
 
 Config.AllowedGroups = {
     qb = { "admin", "god" },         -- QBCore roles
