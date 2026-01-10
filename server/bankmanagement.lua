@@ -77,6 +77,13 @@ end)
 
 RegisterNetEvent('muhaddil_bank:sellBank', function(bankId)
     local src = source
+
+    if not IsPlayerAtHisBank(src, bankId) then
+        -- print(('[BANK-EXPLOIT] %s intentó vender %s sin estar en el banco')
+        --     :format(GetPlayerName(src), bankId))
+        return Notify(src, 'error', 'Debes estar dentro de tu banco para venderlo')
+    end
+
     local ok, result = exports['muhaddil-banking']:SellBank(src, bankId)
 
     if not ok then
@@ -98,6 +105,12 @@ RegisterNetEvent('muhaddil_bank:transferBank', function(bankId, targetPlayerId)
 
     if not Config.BankOwnership.Enabled then
         return Notify(src, 'error', Locale('server.bank_ownership_disabled'))
+    end
+
+    if not IsPlayerAtHisBank(src, bankId) then
+        -- print(("[BANK-EXPLOIT] %s intentó retirar %s sin estar en el banco")
+        --     :format(GetPlayerName(src), bankId))
+        return Notify(src, 'error', 'Debes estar dentro de tu banco para retirar las ganancias')
     end
 
     targetPlayerId = tonumber(targetPlayerId)
@@ -151,6 +164,12 @@ RegisterNetEvent('muhaddil_bank:updateCommission', function(bankId, newRate)
         return Notify(src, 'error', Locale('server.bank_ownership_disabled'))
     end
 
+    if not IsPlayerAtHisBank(src, bankId) then
+        -- print(("[BANK-EXPLOIT] %s intentó retirar %s sin estar en el banco")
+        --     :format(GetPlayerName(src), bankId))
+        return Notify(src, 'error', 'Debes estar dentro de tu banco para retirar las ganancias')
+    end
+
     newRate = tonumber(newRate)
     if not newRate then
         return Notify(src, 'error', Locale('server.invalid_amount'))
@@ -184,8 +203,17 @@ RegisterNetEvent('muhaddil_bank:withdrawEarnings', function(bankId)
         return Notify(src, 'error', Locale('server.bank_ownership_disabled'))
     end
 
-    local bank = MySQL.single.await('SELECT * FROM bank_ownership WHERE bank_id = ? AND owner = ?',
-        { bankId, identifier })
+    if not IsPlayerAtHisBank(src, bankId) then
+        -- print(("[BANK-EXPLOIT] %s intentó retirar %s sin estar en el banco")
+        --     :format(GetPlayerName(src), bankId))
+        return Notify(src, 'error', 'Debes estar dentro de tu banco para retirar las ganancias')
+    end
+
+    local bank = MySQL.single.await(
+        'SELECT * FROM bank_ownership WHERE bank_id = ? AND owner = ?',
+        { bankId, identifier }
+    )
+
     if not bank then
         return Notify(src, 'error', Locale('server.bank_not_owned'))
     end
@@ -196,13 +224,17 @@ RegisterNetEvent('muhaddil_bank:withdrawEarnings', function(bankId)
     end
 
     AddPlayerMoney(src, earnings)
-    MySQL.query.await('UPDATE bank_ownership SET pending_earnings = 0 WHERE bank_id = ?', { bankId })
+
+    MySQL.query.await(
+        'UPDATE bank_ownership SET pending_earnings = 0 WHERE bank_id = ?',
+        { bankId }
+    )
 
     Notify(src, 'success', Locale('server.earnings_withdrawn', earnings))
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 
-    print(string.format("^2[Bank System] %s retiró $%s de ganancias de %s^7", GetPlayerName(src), earnings,
-        bank.bank_name))
+    print(string.format("^2[Bank System] %s retiró $%s de %s^7",
+        GetPlayerName(src), earnings, bank.bank_name))
 end)
 
 RegisterNetEvent('muhaddil_bank:renameBank', function(bankId, newName)

@@ -319,6 +319,33 @@ function GenerateCardNumber()
     return cardNum
 end
 
+function GetBankCoords(bankId)
+    for _, bank in ipairs(Config.BankLocations) do
+        if bank.id == bankId then
+            return bank.coords
+        end
+    end
+    return nil
+end
+
+function IsPlayerAtHisBank(src, bankId)
+    local bankCoords = GetBankCoords(bankId)
+    if not bankCoords then
+        print("^1[Bank] bankId inválido:", bankId, "^7")
+        return false
+    end
+
+    local ped = GetPlayerPed(src)
+    if not ped or not DoesEntityExist(ped) then
+        return false
+    end
+
+    local playerCoords = GetEntityCoords(ped)
+    local distance = #(playerCoords - bankCoords)
+
+    return distance <= 3.5
+end
+
 -- exports('GetPlayer', GetPlayer)
 -- exports('GetPlayerIdentifier', GetPlayerIdentifier)
 -- exports('GetPlayerMoney', GetPlayerMoney)
@@ -329,3 +356,5 @@ end
 -- exports('RemovePlayerBankMoney', RemovePlayerBankMoney)
 exports('ApplyBankCommission', ApplyBankCommission)
 exports('GenerateCardNumber', GenerateCardNumber)
+exports('GetBankCoords', GetBankCoords)
+exports('IsPlayerAtHisBank', IsPlayerAtHisBank)
