@@ -210,8 +210,8 @@ export const CardManager: React.FC<CardManagerProps> = ({ accounts }) => {
                                         <p className="text-sm font-medium text-white/90 truncate max-w-[180px]">{card.account_name}</p>
                                     </div>
                                     <img
-                                        src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg"
-                                        alt="Mastercard"
+                                        src="https://raw.githubusercontent.com/Muhaddil/muhaddil-banking/2d152d8375ec89a70571ad8a593c918168efebda/icons/contactless.png"
+                                        alt="NFC"
                                         className="h-8 opacity-80"
                                     />
                                 </div>

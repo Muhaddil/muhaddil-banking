@@ -125,6 +125,10 @@ Citizen.CreateThread(function()
         local markerShow = false
 
         for _, bank in pairs(Config.BankLocations) do
+            if bank.useped then
+                sleep = 60000
+            end
+
             if not bank.useped then
                 local distance = #(playerCoords - bank.coords)
 

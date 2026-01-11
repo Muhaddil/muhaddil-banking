@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState, useCallback, useEffect } from "react"
 import { fetchNui } from "./utils/fetchNui"
 import { useNuiEvent } from "./hooks/useNuiEvent"
@@ -170,6 +172,8 @@ const AppContent: React.FC<AppContentProps> = ({
 }) => {
   const { t } = useLocale()
 
+  const cashAvailable = data.playerMoney ?? 0
+
   useEffect(() => {
     if (activeTab === "banks" && !data.bankManagementEnabled) {
       setActiveTab("accounts")
@@ -227,6 +231,7 @@ const AppContent: React.FC<AppContentProps> = ({
                   onAction={(action: "deposit" | "withdraw" | "transfer" | "createAccount") =>
                     setModalState({ type: action, isOpen: true })
                   }
+                  playerMoney={data.playerMoney}
                 />
               </div>
             )}
@@ -244,6 +249,7 @@ const AppContent: React.FC<AppContentProps> = ({
                 currentBank={data.currentBank}
                 currentBankType={data.currentBankType}
                 currentBankCommissionRate={data.currentBankCommissionRate}
+                playerMoney={data.playerMoney}
               />
             )}
 
@@ -308,27 +314,35 @@ const AppContent: React.FC<AppContentProps> = ({
                 modalState.type === "withdraw" ||
                 modalState.type === "transfer" ||
                 modalState.type === "loan") && (
-                  <input
-                    type="number"
-                    placeholder={t("modals.common.amount")}
-                    value={
-                      modalState.type === "deposit"
-                        ? formData.depositAmount
-                        : modalState.type === "withdraw"
-                          ? formData.withdrawAmount
-                          : modalState.type === "transfer"
-                            ? formData.transferAmount
-                            : formData.loanAmount
-                    }
-                    onChange={(e) => {
-                      const val = e.target.value
-                      if (modalState.type === "deposit") setFormData({ ...formData, depositAmount: val })
-                      else if (modalState.type === "withdraw") setFormData({ ...formData, withdrawAmount: val })
-                      else if (modalState.type === "transfer") setFormData({ ...formData, transferAmount: val })
-                      else setFormData({ ...formData, loanAmount: val })
-                    }}
-                    className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white focus:border-indigo-500 outline-none"
-                  />
+                  <>
+                    {modalState.type === "deposit" && (
+                      <p className="text-sm text-white/70 mb-2">
+                        {t("quickActions.cashAvailable")}: ${cashAvailable.toLocaleString()}
+                      </p>
+                    )}
+
+                    <input
+                      type="number"
+                      placeholder={t("modals.common.amount")}
+                      value={
+                        modalState.type === "deposit"
+                          ? formData.depositAmount
+                          : modalState.type === "withdraw"
+                            ? formData.withdrawAmount
+                            : modalState.type === "transfer"
+                              ? formData.transferAmount
+                              : formData.loanAmount
+                      }
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (modalState.type === "deposit") setFormData({ ...formData, depositAmount: val })
+                        else if (modalState.type === "withdraw") setFormData({ ...formData, withdrawAmount: val })
+                        else if (modalState.type === "transfer") setFormData({ ...formData, transferAmount: val })
+                        else setFormData({ ...formData, loanAmount: val })
+                      }}
+                      className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white focus:border-indigo-500 outline-none"
+                    />
+                  </>
                 )}
 
               {modalState.type === "transfer" && (

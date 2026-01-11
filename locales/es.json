@@ -53,7 +53,8 @@
     "deposit": "Depositar",
     "withdraw": "Retirar",
     "transfer": "Transferir",
-    "newAccount": "Nueva Cuenta"
+    "newAccount": "Nueva Cuenta",
+    "cashAvailable": "Dinero en mano"
   },
   "transactions": {
     "search": "Buscar transacciones...",
@@ -80,7 +81,12 @@
     "date": "Fecha",
     "remaining": "Restante a pagar",
     "paid": "pagado",
-    "payInstallment": "Pagar Cuota"
+    "payInstallment": "Pagar Cuota",
+    "paymentAmount": "¿Cuánto deseas pagar?",
+    "payHalf": "Pagar 50%",
+    "payAll": "Pagar todo",
+    "cancel": "Cancelar",
+    "confirmPayment": "Confirmar pago"
   },
   "stats": {
     "currentBalance": "Balance Actual",
@@ -103,7 +109,7 @@
     "fullManagement": "Gestión completa",
     "availableBanks": "Bancos Disponibles",
     "purchaseDescription": "Compra un banco y comienza a generar ingresos pasivos",
-    "available": "Disponible ahora",
+    "available": "Disponible",
     "price": "Precio",
     "buy": "Comprar",
     "myBranches": "Mis Sucursales",
@@ -133,7 +139,8 @@
     "updateCommission": "Actualizar Comisión",
     "invalidPlayerId": "ID de jugador inválido",
     "commissionRangeError": "La comisión debe estar entre 0.5% y 3%",
-    "nameLengthError": "El nombre debe tener al menos 3 caracteres"
+    "nameLengthError": "El nombre debe tener al menos 3 caracteres",
+    "premiumInvestment": "Inversión Premium"
   },
   "atm": {
     "title": "CAJERO ATM",

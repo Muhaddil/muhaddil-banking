@@ -57,7 +57,8 @@
     "deposit": "Deposit",
     "withdraw": "Withdraw",
     "transfer": "Transfer",
-    "newAccount": "New Account"
+    "newAccount": "New Account",
+    "cashAvailable": "Cash Available"
   },
   "transactions": {
     "search": "Search transactions...",
@@ -84,7 +85,12 @@
     "date": "Date",
     "remaining": "Remaining to pay",
     "paid": "paid",
-    "payInstallment": "Pay Installment"
+    "payInstallment": "Pay Installment",
+    "paymentAmount": "How much would you like to pay?",
+    "payHalf": "Pay 50%",
+    "payAll": "Pay todo",
+    "cancel": "Cancel",
+    "confirmPayment": "Confirm payment"
   },
   "stats": {
     "currentBalance": "Current Balance",
@@ -107,7 +113,7 @@
     "fullManagement": "Full management",
     "availableBanks": "Available Banks",
     "purchaseDescription": "Purchase a bank and start generating passive income",
-    "available": "Available now",
+    "available": "Available",
     "price": "Price",
     "buy": "Buy",
     "myBranches": "My Branches",
@@ -137,7 +143,8 @@
     "updateCommission": "Update Commission",
     "invalidPlayerId": "Invalid player ID",
     "commissionRangeError": "Commission must be between 0.5% and 3%",
-    "nameLengthError": "Name must be at least 3 characters"
+    "nameLengthError": "Name must be at least 3 characters",
+    "premiumInvestment": "Premium Investment"
   },
   "atm": {
     "title": "ATM",

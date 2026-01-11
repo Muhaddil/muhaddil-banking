@@ -48,6 +48,7 @@ interface DashboardProps {
     currentBank?: string
     currentBankType?: string
     currentBankCommissionRate?: number
+    playerMoney?: number
 }
 
 const AccountCard: React.FC<{
@@ -220,7 +221,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const selectedAccountBalance = selectedAccount
         ? Number(selectedAccount.balance)
         : 0
-
 
     return (
         <div className="space-y-6 animate-in">

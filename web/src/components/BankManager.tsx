@@ -164,7 +164,7 @@ export const BankManager: React.FC<BankManagerProps> = ({ ownedBanks, availableB
                                 <Crown className="text-yellow-200" size={28} />
                             </div>
                             <span className="px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-white text-sm font-semibold border border-white/30 shadow-lg">
-                                Premium Investment
+                                {t("banks.premiumInvestment")}
                             </span>
                         </div>
                         <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
@@ -229,12 +229,12 @@ export const BankManager: React.FC<BankManagerProps> = ({ ownedBanks, availableB
                                 className="group relative overflow-hidden bg-[rgb(var(--bg-card))] border-white/10 hover:border-[rgb(var(--accent-primary))]/50 transition-all duration-300 hover:shadow-2xl hover:shadow-[rgba(var(--accent-glow),0.3)]"
                             >
                                 <div className="p-6 space-y-6">
-                                    <div className="flex items-start justify-between">
+                                    <div className="flex items-start justify-between gap-2">
                                         <div className="p-4 bg-gradient-to-br from-[rgb(var(--accent-primary))]/15 to-[rgb(var(--accent-secondary))]/10 rounded-2xl border border-[rgb(var(--accent-primary))]/20">
                                             <Building2 className="text-[rgb(var(--accent-primary))]" size={28} />
                                         </div>
                                         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/15 rounded-full border border-emerald-500/30">
-                                            {/* <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" /> */}
+                                            <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                                             <span className="text-emerald-300 text-xs font-semibold">{t("banks.available")}</span>
                                         </div>
                                     </div>
