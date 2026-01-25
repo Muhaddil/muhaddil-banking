@@ -30,7 +30,13 @@ local function addApp()
     end
 end
 
-addApp()
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    addApp()
+end)
+
+RegisterNetEvent('esx:playerLoaded', function (xPlayer, skin)
+    addApp()
+end)
 
 AddEventHandler("onResourceStart", function(resource)
     if resource == "lb-phone" then
