@@ -47,6 +47,17 @@
       "addUser": "Añadir Usuario",
       "removeUser": "Eliminar Usuario",
       "deleteAccount": "Eliminar Cuenta"
+    },
+    "emptyState": {
+      "title": "Bienvenido a tu banco",
+      "subtitle": "Comienza creando tu primera cuenta bancaria",
+      "createFirst": "Crear mi primera cuenta",
+      "feature1": "Gestión eficiente",
+      "feature1Desc": "Administra tu dinero de forma segura",
+      "feature2": "Cuentas compartidas",
+      "feature2Desc": "Comparte cuentas con otros usuarios",
+      "feature3": "Estadísticas detalladas",
+      "feature3Desc": "Visualiza tu actividad financiera"
     }
   },
   "quickActions": {
@@ -97,7 +108,14 @@
     "last7Days": "Últimos 7 días",
     "noData": "No hay datos suficientes para mostrar estadísticas",
     "income": "Ingresos",
-    "expenses": "Gastos"
+    "expenses": "Gastos",
+    "emptyState": {
+      "title": "No hay actividad financiera",
+      "subtitle": "Realiza tu primera transacción para ver tus estadísticas aquí",
+      "deposit": "Depositar dinero",
+      "withdraw": "Retirar fondos",
+      "transfer": "Transferir dinero"
+    }
   },
   "banks": {
     "bankManagement": "Gestión de Bancos",

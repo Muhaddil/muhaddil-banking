@@ -304,71 +304,20 @@ end)
 
 RegisterNetEvent('muhaddil_bank:transfer', function(data)
     local src = source
-    local identifier = GetPlayerIdentifier(src)
-    if not identifier then return end
 
-    local fromAccountId = tonumber(data.fromAccountId)
-    local toAccountId   = tonumber(data.toAccountId)
-    local amount        = tonumber(data.amount)
-    local bankLocation  = data.bankLocation
+    print('Triggered transfer event')
 
-    if not fromAccountId or not toAccountId then
-        return Notify(src, 'error', Locale('server.invalid_account'))
+    local success = exports['muhaddil-banking']:Transfer(
+        src,
+        data.fromAccountId,
+        data.toAccountId,
+        data.amount,
+        data.bankLocation
+    )
+
+    if success then
+        TriggerClientEvent('muhaddil_bank:refreshData', src)
     end
-
-    if not amount or amount <= 0 then
-        return Notify(src, 'error', Locale('server.invalid_amount'))
-    end
-
-    local account = MySQL.single.await([[
-        SELECT ba.*
-        FROM bank_accounts ba
-        LEFT JOIN bank_shared_access bsa
-            ON ba.id = bsa.account_id AND bsa.user_identifier = ?
-        WHERE ba.id = ? AND (ba.owner = ? OR bsa.user_identifier = ?)
-    ]], { identifier, fromAccountId, identifier, identifier })
-
-    if not account then
-        return Notify(src, 'error', Locale('server.no_permission_origin'))
-    end
-
-    account.balance = tonumber(account.balance)
-    if not account.balance or account.balance < amount then
-        return Notify(src, 'error', Locale('server.insufficient_balance'))
-    end
-
-    local success = MySQL.transaction.await({
-        {
-            query = 'UPDATE bank_accounts SET balance = balance - ? WHERE id = ?',
-            values = { amount, fromAccountId }
-        },
-        {
-            query = 'UPDATE bank_accounts SET balance = balance + ? WHERE id = ?',
-            values = { amount, toAccountId }
-        },
-        {
-            query =
-            'INSERT INTO bank_transactions (account_id, type, amount, description, bank_location) VALUES (?, ?, ?, ?, ?)',
-            values = { fromAccountId, 'transfer_out', -amount, 'Transferencia a cuenta #' .. toAccountId, bankLocation }
-        },
-        {
-            query =
-            'INSERT INTO bank_transactions (account_id, type, amount, description, bank_location) VALUES (?, ?, ?, ?, ?)',
-            values = { toAccountId, 'transfer_in', amount, 'Transferencia desde cuenta #' .. fromAccountId, bankLocation }
-        }
-    })
-
-    if not success then
-        return Notify(src, 'error', Locale('server.transfer_error'))
-    end
-
-    if Config.BankOwnership.Enabled and Config.BankOwnership.CommissionOnTransfer and bankLocation then
-        ApplyBankCommission(bankLocation, amount)
-    end
-
-    Notify(src, 'success', Locale('server.transfer_completed'))
-    TriggerEvent('muhaddil_bank:afterTransfer', src)
-    TriggerClientEvent('muhaddil_bank:refreshData', src)
 end)
 
 RegisterNetEvent('muhaddil_bank:deposit', function(accountId, amount, bankLocation)
@@ -437,71 +386,111 @@ RegisterNetEvent('muhaddil_bank:withdraw', function(accountId, amount, bankLocat
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 end)
 
-RegisterNetEvent('muhaddil_bank:requestLoan', function(data)
-    local src = source
+function requestLoan(src, data)
     local identifier = GetPlayerIdentifier(src)
-    if not identifier then return end
+    if not identifier then return false, 'No se pudo obtener el identificador del jugador.' end
 
     local amount = tonumber(data.amount)
     local installments = tonumber(data.installments)
+    local interestRate = tonumber(data.interestRate) or Config.Loans.InterestRate * 100
+
+    if not amount or amount <= 0 or not installments or installments <= 0 then
+        return false, 'Datos inválidos'
+    end
 
     if amount < Config.Loans.MinAmount or amount > Config.Loans.MaxAmount then
-        return Notify(src, 'error', Locale('server.invalid_amount'))
+        return false, Locale('server.invalid_amount')
     end
 
     local activeLoans = MySQL.scalar.await(
-        'SELECT COUNT(*) FROM bank_loans WHERE user_identifier = ? AND status = "active"', { identifier })
+        'SELECT COUNT(*) FROM bank_loans WHERE user_identifier = ? AND status = "active"', { identifier }
+    )
     if activeLoans > 0 then
-        return Notify(src, 'error', Locale('server.loan_active'))
+        return false, Locale('server.loan_active')
     end
 
-    local totalWithInterest = amount * (1 + Config.Loans.InterestRate)
+    local totalWithInterest = amount * (1 + (interestRate / 100))
 
     MySQL.insert.await(
         'INSERT INTO bank_loans (user_identifier, amount, remaining, interest_rate, installments) VALUES (?, ?, ?, ?, ?)',
-        {
-            identifier, amount, totalWithInterest, Config.Loans.InterestRate * 100, installments
-        })
+        { identifier, amount, totalWithInterest, interestRate, installments }
+    )
 
     AddPlayerMoney(src, amount)
-    Notify(src, 'success', Locale('server.loan_approved'))
+    Notify(src, 'success', 'Préstamo aprobado: ' .. amount .. '$')
     TriggerClientEvent('muhaddil_bank:refreshData', src)
+
+    return true
+end
+
+RegisterNetEvent('muhaddil_bank:requestLoan', function(data)
+    requestLoan(source, data)
 end)
 
-RegisterNetEvent('muhaddil_bank:payLoan', function(loanId, amount)
-    local src = source
+function payLoan(src, loanId, amount, isFromPhone)
     local identifier = GetPlayerIdentifier(src)
-    if not identifier then return end
+    if not identifier then return false, 'No se pudo obtener el identificador del jugador.' end
 
     amount = tonumber(amount)
     if not amount or amount <= 0 then
-        return Notify(src, 'error', Locale('server.invalid_amount'))
+        return false, Locale('server.invalid_amount')
     end
 
-    local remaining = MySQL.scalar.await('SELECT remaining FROM bank_loans WHERE id = ? AND user_identifier = ?',
-        { loanId, identifier })
+    if not amount < GetPlayerBankMoney(source) then
+        return false, Locale('server.insufficient_money')
+    end
+
+    local remaining = MySQL.scalar.await(
+        'SELECT remaining FROM bank_loans WHERE id = ? AND user_identifier = ?',
+        { loanId, identifier }
+    )
     remaining = tonumber(remaining)
 
     if not remaining then
-        return Notify(src, 'error', Locale('server.loan_not_found'))
+        return false, Locale('server.loan_not_found')
     end
 
     if amount > remaining then
         amount = remaining
     end
 
-    if RemovePlayerMoney(src, amount) then
-        local newRemaining = remaining - amount
-        local status = (newRemaining <= 0) and 'paid' or 'active'
+    if isFromPhone then
+        if RemovePlayerBankMoney(src, amount) then
+            local newRemaining = remaining - amount
+            local status = (newRemaining <= 0) and 'paid' or 'active'
 
-        MySQL.query.await('UPDATE bank_loans SET remaining = ?, status = ? WHERE id = ?',
-            { newRemaining, status, loanId })
+            MySQL.query.await(
+                'UPDATE bank_loans SET remaining = ?, status = ? WHERE id = ?',
+                { newRemaining, status, loanId }
+            )
 
-        Notify(src, 'success', Locale('server.payment_completed', newRemaining))
-        TriggerClientEvent('muhaddil_bank:refreshData', src)
+            Notify(src, 'success', Locale('server.payment_completed', newRemaining))
+            TriggerClientEvent('muhaddil_bank:refreshData', src)
+            return true, newRemaining
+        else
+            return false, Locale('server.insufficient_money')
+        end
     else
-        Notify(src, 'error', Locale('server.insufficient_money'))
+        if RemovePlayerMoney(src, amount) then
+            local newRemaining = remaining - amount
+            local status = (newRemaining <= 0) and 'paid' or 'active'
+
+            MySQL.query.await(
+                'UPDATE bank_loans SET remaining = ?, status = ? WHERE id = ?',
+                { newRemaining, status, loanId }
+            )
+
+            Notify(src, 'success', Locale('server.payment_completed', newRemaining))
+            TriggerClientEvent('muhaddil_bank:refreshData', src)
+            return true, newRemaining
+        else
+            return false, Locale('server.insufficient_money')
+        end
     end
+end
+
+RegisterNetEvent('muhaddil_bank:payLoan', function(loanId, amount, isFromPhone)
+    payLoan(source, loanId, amount, isFromPhone)
 end)
 
 RegisterNetEvent('muhaddil_bank:purchaseBank', function(bankId)
@@ -555,5 +544,79 @@ end)
 RegisterCommand(Config.OpenCommand, function(source, args, rawCommand)
     TriggerClientEvent('muhaddil_bank:openBank', source)
 end, false)
+
+exports('Transfer', function(source, fromAccountId, toAccountId, amount, bankLocation)
+    local src = source
+    local identifier = GetPlayerIdentifier(src)
+    if not identifier then return end
+
+    fromAccountId = tonumber(fromAccountId)
+    toAccountId   = tonumber(toAccountId)
+    amount        = tonumber(amount)
+    print(amount)
+    local bankLocation = bankLocation
+
+    if not fromAccountId or not toAccountId then
+        return Notify(src, 'error', Locale('server.invalid_account'))
+    end
+
+    if not amount or amount <= 0 then
+        return Notify(src, 'error', Locale('server.invalid_amount'))
+    end
+
+    local account = MySQL.single.await([[
+        SELECT ba.*
+        FROM bank_accounts ba
+        LEFT JOIN bank_shared_access bsa
+            ON ba.id = bsa.account_id AND bsa.user_identifier = ?
+        WHERE ba.id = ? AND (ba.owner = ? OR bsa.user_identifier = ?)
+    ]], { identifier, fromAccountId, identifier, identifier })
+
+    if not account then
+        return Notify(src, 'error', Locale('server.no_permission_origin'))
+    end
+
+    account.balance = tonumber(account.balance)
+    if not account.balance or account.balance < amount then
+        return Notify(src, 'error', Locale('server.insufficient_balance'))
+    end
+
+    local success = MySQL.transaction.await({
+        {
+            query = 'UPDATE bank_accounts SET balance = balance - ? WHERE id = ?',
+            values = { amount, fromAccountId }
+        },
+        {
+            query = 'UPDATE bank_accounts SET balance = balance + ? WHERE id = ?',
+            values = { amount, toAccountId }
+        },
+        {
+            query =
+            'INSERT INTO bank_transactions (account_id, type, amount, description, bank_location) VALUES (?, ?, ?, ?, ?)',
+            values = { fromAccountId, 'transfer_out', -amount, 'Transferencia a cuenta #' .. toAccountId, bankLocation }
+        },
+        {
+            query =
+            'INSERT INTO bank_transactions (account_id, type, amount, description, bank_location) VALUES (?, ?, ?, ?, ?)',
+            values = { toAccountId, 'transfer_in', amount, 'Transferencia desde cuenta #' .. fromAccountId, bankLocation }
+        }
+    })
+
+    if not success then
+        return Notify(src, 'error', Locale('server.transfer_error'))
+    end
+
+    if Config.BankOwnership.Enabled and Config.BankOwnership.CommissionOnTransfer and bankLocation then
+        ApplyBankCommission(bankLocation, amount)
+    end
+
+    Notify(src, 'success', Locale('server.transfer_completed'))
+    TriggerEvent('muhaddil_bank:afterTransfer', src)
+
+    return true
+end)
+
+exports('requestLoan', requestLoan)
+exports('payLoan', payLoan)
 
 print('^2[Bank System] Server initialized successfully^7')

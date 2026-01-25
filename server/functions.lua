@@ -275,10 +275,6 @@ function ApplyBankCommission(bankId, transactionAmount)
 end
 
 function hasPermission(src)
-    if not Config.RestricToAdmins then
-        return true
-    end
-
     if FrameWork == 'qb' then
         for _, group in ipairs(Config.AllowedGroups.qb) do
             if QBCore.Functions.HasPermission(src, group) then

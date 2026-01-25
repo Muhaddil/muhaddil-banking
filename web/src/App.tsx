@@ -274,8 +274,8 @@ const AppContent: React.FC<AppContentProps> = ({
                 data={getChartData()}
                 totalIncome={getTotalIncome()}
                 totalExpense={getTotalExpense()}
-                currentBalance={parseFloat(selectedAccount.balance)}
-              />
+                currentBalance={parseFloat(selectedAccount?.balance ?? "0")} 
+                />
             )}
 
             {activeTab === "cards" && <CardManager accounts={data.accounts} />}
@@ -449,7 +449,7 @@ const App = () => {
 
   useNuiEvent("setData", (event: any) => {
     const payload = event.data || {}
-    const allAccounts = payload.accounts || []
+    const allAccounts: Account[] = (payload.accounts || []) as Account[]
     const ownedAccounts = allAccounts.filter((acc: any) => acc.isOwner === true)
     const sharedAccountsList = allAccounts.filter((acc: any) => acc.isOwner === false)
 
@@ -471,12 +471,17 @@ const App = () => {
       currentBankCommissionRate: event.commissionRate ?? payload.comissionRate ?? prev.currentBankCommissionRate,
       bankManagementEnabled: event.bankManagementEnabled ?? payload.bankManagementEnabled ?? prev.bankManagementEnabled,
     }))
-    if (allAccounts.length > 0 && selectedAccountId === null) {
-      setSelectedAccountId(allAccounts[0].id)
-    }
-    if (selectedAccountId !== null && !allAccounts.some((acc: any) => acc.id === selectedAccountId)) {
-      setSelectedAccountId(allAccounts.length > 0 ? allAccounts[0].id : null)
-    }
+    setSelectedAccountId((currentId) => {
+      if (allAccounts.length === 0) return null
+
+      if (currentId === null) return allAccounts[0].id
+
+      if (!allAccounts.some(acc => acc.id === currentId)) {
+        return allAccounts[0].id
+      }
+
+      return currentId
+    })
   })
 
   useNuiEvent<{ type: string; message: string }>("notify", (event) => {

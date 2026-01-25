@@ -18,6 +18,7 @@ import {
     CreditCard,
     Sparkles,
     ChevronRight,
+    Activity,
 } from "lucide-react"
 import { useLocale } from "../hooks/useLocale"
 
@@ -200,8 +201,84 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }
     }, [selectedAccount, accounts, sharedAccounts])
 
-    const accountExists = selectedAccount && [...accounts, ...sharedAccounts].some((acc) => acc.id === selectedAccount.id)
+    const hasAnyAccount = accounts.length > 0 || sharedAccounts.length > 0
 
+    if (!hasAnyAccount) {
+        return (
+            <div className="space-y-6 animate-in">
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-600 p-12 md:p-16 shadow-2xl shadow-violet-500/30">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
+                    <div className="absolute bottom-0 left-0 w-96 h-96 bg-black/10 rounded-full blur-3xl -ml-32 -mb-32" />
+
+                    <div className="relative z-10 text-center max-w-2xl mx-auto">
+                        <div className="inline-flex p-6 rounded-3xl bg-white/20 backdrop-blur-sm mb-6">
+                            <Wallet size={48} className="text-white" />
+                        </div>
+
+                        <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                            {t("dashboard.emptyState.title") || "Bienvenido a tu banco"}
+                        </h2>
+
+                        <p className="text-xl text-white/80 mb-8">
+                            {t("dashboard.emptyState.subtitle") || "Comienza creando tu primera cuenta bancaria"}
+                        </p>
+
+                        <div className="flex justify-center">
+                            <Button
+                                onClick={() => onAction("createAccount")}
+                                className="bg-white/20 text-violet-600 hover:bg-white/30 font-semibold text-lg px-8 py-4 shadow-xl"
+                                icon={<Plus size={24} />}
+                            >
+                                {t("dashboard.emptyState.createFirst") || "Crear mi primera cuenta"}
+                            </Button>
+                        </div>
+
+                        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/20">
+                                <div className="p-3 bg-white/20 rounded-xl inline-flex mb-3">
+                                    <TrendingUp size={24} className="text-white" />
+                                </div>
+                                <h3 className="text-white font-semibold mb-2">
+                                    {t("dashboard.emptyState.feature1") || "Gestión eficiente"}
+                                </h3>
+                                <p className="text-white/70 text-sm">
+                                    {t("dashboard.emptyState.feature1Desc") || "Administra tu dinero de forma segura"}
+                                </p>
+                            </div>
+
+                            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/20">
+                                <div className="p-3 bg-white/20 rounded-xl inline-flex mb-3">
+                                    <CreditCard size={24} className="text-white" />
+                                </div>
+                                <h3 className="text-white font-semibold mb-2">
+                                    {t("dashboard.emptyState.feature2") || "Cuentas compartidas"}
+                                </h3>
+                                <p className="text-white/70 text-sm">
+                                    {t("dashboard.emptyState.feature2Desc") || "Comparte cuentas con otros usuarios"}
+                                </p>
+                            </div>
+
+                            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/20">
+                                <div className="p-3 bg-white/20 rounded-xl inline-flex mb-3">
+                                    <Activity size={24} className="text-white" />
+                                </div>
+                                <h3 className="text-white font-semibold mb-2">
+                                    {t("dashboard.emptyState.feature3") || "Estadísticas detalladas"}
+                                </h3>
+                                <p className="text-white/70 text-sm">
+                                    {t("dashboard.emptyState.feature3Desc") || "Visualiza tu actividad financiera"}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    if (!selectedAccount) return null
+
+    const accountExists = [...accounts, ...sharedAccounts].some((acc) => acc.id === selectedAccount.id)
     if (!accountExists) return null
 
     const isOwner = accounts.some((acc) => acc.id === selectedAccount.id)

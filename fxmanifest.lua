@@ -23,6 +23,8 @@ server_script {
 files {
     'web/build/index.html',
     'web/build/**/*',
+    'phone-app-ui/*',
+    'phone-app-ui/**/*',
     'locales/*.json'
 }
 

@@ -301,15 +301,24 @@ end)
 RegisterNetEvent('muhaddil_bank:refreshData', function()
     if not isOpen then return end
 
+    Wait(100)
+
     local data = lib.callback.await('muhaddil_bank:getData', false, currentBankLocation)
-    if data then
-        SendNUIMessage({
-            action = 'setData',
-            data = data,
-            currentBank = currentBankName,
-            currentBankId = currentBankLocation
-        })
+    if not data then
+        return lib.notify({ type = 'error', description = Locale('client.bank_connection_error') })
     end
+    currentBankType = data.currentBankInfo.bankType
+    commissionRate = data.currentBankInfo.commissionRate
+    bankManagementEnabled = Config.BankOwnership.Enabled
+    SendNUIMessage({
+        action = 'setData',
+        data = data,
+        currentBank = currentBankName,
+        currentBankId = currentBankLocation,
+        currentBankType = currentBankType,
+        commissionRate = commissionRate,
+        bankManagementEnabled = bankManagementEnabled
+    })
 end)
 
 RegisterNetEvent('muhaddil_bank:openBank', function()

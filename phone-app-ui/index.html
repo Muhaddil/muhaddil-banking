@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Banco Muhaddil</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="colors.css" />
+    <link rel="stylesheet" href="frame.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+</head>
+
+<body>
+    <div id="phone-wrapper">
+        <div class="app" id="content">
+            <div class="app-header">
+                <div class="header-content">
+                    <div class="header-text">
+                        <div class="header-greeting">Balance Total</div>
+                        <div class="header-balance" id="total-balance">$0.00</div>
+                    </div>
+                    <div class="header-icon">
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="40" height="40" rx="12" fill="rgba(255,255,255,0.15)" />
+                            <path
+                                d="M20 12L12 17V27C12 27.5304 12.2107 28.0391 12.5858 28.4142C12.9609 28.7893 13.4696 29 14 29H26C26.5304 29 27.0391 28.7893 27.4142 28.4142C27.7893 28.0391 28 27.5304 28 27V17L20 12Z"
+                                stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M16 21C16 21 17 22 20 22C23 22 24 21 24 21" stroke="white" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" data-tab="accounts">
+                    <span class="tab-icon">💳</span>
+                    <span class="tab-label">Cuentas</span>
+                </button>
+                <button class="tab" data-tab="transactions">
+                    <span class="tab-icon">📊</span>
+                    <span class="tab-label">Historial</span>
+                </button>
+                <button class="tab" data-tab="loans">
+                    <span class="tab-icon">💰</span>
+                    <span class="tab-label">Préstamos</span>
+                </button>
+            </div>
+
+            <div class="tab-content active" id="accounts-tab">
+                <div class="content-wrapper">
+                    <div class="section">
+                        <div class="section-header">
+                            <h3>Mis Cuentas</h3>
+                            <button class="btn-icon" id="btn-new-account">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="accounts-list" class="accounts-list"></div>
+                    </div>
+
+                    <div class="section" id="cards-section" style="display: none;">
+                        <div class="section-header">
+                            <h3>Tarjetas de la Cuenta</h3>
+                            <button class="btn-icon" id="btn-new-card">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="cards-list" class="cards-list"></div>
+                    </div>
+
+                    <div class="quick-actions">
+                        <button class="action-card" id="btn-transfer">
+                            <div class="action-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M7 17L17 7M17 7H7M17 7V17" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </div>
+                            <div class="action-text">
+                                <div class="action-title">Transferir</div>
+                                <div class="action-subtitle">Enviar dinero</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="transactions-tab">
+                <div class="content-wrapper">
+                    <div class="section">
+                        <div class="section-header">
+                            <h3>Últimas Transacciones</h3>
+                        </div>
+                        <div id="transactions-list" class="transactions-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="loans-tab">
+                <div class="content-wrapper">
+                    <div class="section">
+                        <div class="section-header">
+                            <h3>Préstamos Activos</h3>
+                            <button class="btn-icon" id="btn-request-loan">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="loans-list" class="loans-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal" id="modal">
+                <div class="modal-backdrop" id="modal-backdrop"></div>
+                <div class="modal-container">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="modal-title">Modal</h3>
+                            <button class="close-btn" id="modal-close">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="modal-body"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="dev.js"></script>
+    <script>
+        window.addEventListener('message', (e) => {
+            if (e.data === 'componentsLoaded') {
+                const script = document.createElement('script');
+                script.src = 'script.js';
+                document.body.appendChild(script);
+            } else if (e.data?.type === 'updateData') {
+                if (window.updateBankData) {
+                    window.updateBankData(e.data.data);
+                }
+            } else if (e.data?.type === 'notify') {
+                if (window.sendNotification) {
+                    window.sendNotification({
+                        title: 'Banco',
+                        content: e.data.message
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

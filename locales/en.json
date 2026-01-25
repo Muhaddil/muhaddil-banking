@@ -36,6 +36,17 @@
       "owner": "Owner",
       "shared": "Shared"
     },
+    "emptyState": {
+      "title": "Welcome to your bank",
+      "subtitle": "Start by creating your first bank account",
+      "createFirst": "Create my first account",
+      "feature1": "Efficient management",
+      "feature1Desc": "Manage your money securely",
+      "feature2": "Shared accounts",
+      "feature2Desc": "Share accounts with other users",
+      "feature3": "Detailed statistics",
+      "feature3Desc": "Visualize your financial activity"
+    },
     "feeCalculator": {
       "title": "Transaction Fees",
       "deposit": "Deposit",
@@ -101,7 +112,14 @@
     "last7Days": "Last 7 days",
     "noData": "Not enough data to show statistics",
     "income": "Income",
-    "expenses": "Expenses"
+    "expenses": "Expenses",
+    "emptyState": {
+      "title": "No financial activity",
+      "subtitle": "Make your first transaction to see your statistics here",
+      "deposit": "Deposit money",
+      "withdraw": "Withdraw funds",
+      "transfer": "Transfer money"
+    }
   },
   "banks": {
     "bankManagement": "Bank Management",

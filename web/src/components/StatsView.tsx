@@ -11,12 +11,64 @@ interface StatsViewProps {
     totalIncome: number
     totalExpense: number
     currentBalance: number
+    hasAccount?: boolean
 }
 
-export const StatsView: React.FC<StatsViewProps> = ({ data, totalIncome, totalExpense, currentBalance }) => {
+export const StatsView: React.FC<StatsViewProps> = ({ data, totalIncome, totalExpense, currentBalance, hasAccount }) => {
     const { t } = useLocale()
     const netFlow = totalIncome - totalExpense
     const isPositive = netFlow >= 0
+
+    const hasTransactions = data.length > 0
+    const hasFinancialActivity = totalIncome > 0 || totalExpense > 0
+
+    if ((!hasTransactions && !hasFinancialActivity)) {
+        return (
+            <div className="space-y-6 animate-in">
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 p-12 md:p-16 shadow-2xl">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -mr-32 -mt-32" />
+                    <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -ml-32 -mb-32" />
+
+                    <div className="relative z-10 text-center max-w-2xl mx-auto">
+                        <div className="inline-flex p-6 rounded-3xl bg-white/10 backdrop-blur-sm mb-6">
+                            <Activity size={48} className="text-white/70" />
+                        </div>
+
+                        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                            {t("stats.emptyState.title") || "Sin actividad financiera"}
+                        </h2>
+
+                        <p className="text-lg text-white/60 mb-8">
+                            {t("stats.emptyState.subtitle") || "Realiza tu primera transacción para ver tus estadísticas aquí"}
+                        </p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                            <div className="bg-white/5 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
+                                <TrendingUp size={32} className="text-emerald-400/50 mx-auto mb-3" />
+                                <p className="text-white/50 text-sm font-medium">
+                                    {t("stats.emptyState.deposit") || "Deposita dinero"}
+                                </p>
+                            </div>
+
+                            <div className="bg-white/5 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
+                                <TrendingDown size={32} className="text-red-400/50 mx-auto mb-3" />
+                                <p className="text-white/50 text-sm font-medium">
+                                    {t("stats.emptyState.withdraw") || "Retira fondos"}
+                                </p>
+                            </div>
+
+                            <div className="bg-white/5 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
+                                <DollarSign size={32} className="text-blue-400/50 mx-auto mb-3" />
+                                <p className="text-white/50 text-sm font-medium">
+                                    {t("stats.emptyState.transfer") || "Transfiere dinero"}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-6 animate-in">
