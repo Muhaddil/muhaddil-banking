@@ -187,6 +187,11 @@ export const AtmInterface: React.FC<AtmInterfaceProps> = ({
                 balance: (parseFloat(selectedAccount.balance) + numAmount).toString()
             })
         } else if (action === "withdraw") {
+            if (numAmount > parseFloat(selectedAccount.balance)) {
+                setPinError(t("server.insufficient_balance"))
+                return
+            }
+
             onWithdraw(selectedAccount.id, numAmount)
             setSelectedAccount({
                 ...selectedAccount,
@@ -195,6 +200,10 @@ export const AtmInterface: React.FC<AtmInterfaceProps> = ({
         } else if (action === "transfer") {
             const targetId = parseInt(targetAccountId)
             if (isNaN(targetId)) return
+            if (numAmount > parseFloat(selectedAccount.balance)) {
+                setPinError(t("server.insufficient_balance"))
+                return
+            }
             onTransfer(selectedAccount.id, targetId, numAmount)
             setSelectedAccount({
                 ...selectedAccount,
