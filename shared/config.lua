@@ -4,6 +4,7 @@ Config.FrameWork = "auto" -- auto, esx, qb
 Config.ESXVer = "new"     -- new, old
 Config.OpenCommand = "banco"
 Config.Locale = 'es'
+Config.AutoVersionChecker = true -- Enable automatic version checking
 
 Config.AllowedGroups = {
     qb = { "admin", "god" },         -- QBCore roles
