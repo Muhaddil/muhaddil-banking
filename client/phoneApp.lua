@@ -5,28 +5,30 @@ while GetResourceState("lb-phone") ~= "started" do
 end
 
 local function addApp()
-    local added, errorMessage = exports["lb-phone"]:AddCustomApp({
-        identifier = identifier,
+    if not Config.DisablePhoneApp then
+        local added, errorMessage = exports["lb-phone"]:AddCustomApp({
+            identifier = identifier,
 
-        name = "Banco",
-        description = "Gestiona tus cuentas bancarias",
-        developer = "Muhaddil",
+            name = "Banco",
+            description = "Gestiona tus cuentas bancarias",
+            developer = "Muhaddil",
 
-        defaultApp = true,
-        size = 128000,
+            defaultApp = true,
+            size = 128000,
 
-        images = {
-            "https://cfx-nui-" .. GetCurrentResourceName() .. "/phone-app-ui/assets/screenshot.png"
-        },
+            images = {
+                "https://cfx-nui-" .. GetCurrentResourceName() .. "/phone-app-ui/assets/screenshot.png"
+            },
 
-        ui = GetCurrentResourceName() .. "/phone-app-ui/index.html",
-        icon = "https://cfx-nui-" .. GetCurrentResourceName() .. "/phone-app-ui/assets/icon.jpg",
+            ui = GetCurrentResourceName() .. "/phone-app-ui/index.html",
+            icon = "https://cfx-nui-" .. GetCurrentResourceName() .. "/phone-app-ui/assets/icon.jpg",
 
-        fixBlur = true
-    })
+            fixBlur = true
+        })
 
-    if not added then
-        print("Could not add bank app:", errorMessage)
+        if not added then
+            print("Could not add bank app:", errorMessage)
+        end
     end
 end
 
@@ -34,7 +36,7 @@ RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
     addApp()
 end)
 
-RegisterNetEvent('esx:playerLoaded', function (xPlayer, skin)
+RegisterNetEvent('esx:playerLoaded', function(xPlayer, skin)
     addApp()
 end)
 

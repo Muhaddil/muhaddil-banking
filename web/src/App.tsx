@@ -274,8 +274,8 @@ const AppContent: React.FC<AppContentProps> = ({
                 data={getChartData()}
                 totalIncome={getTotalIncome()}
                 totalExpense={getTotalExpense()}
-                currentBalance={parseFloat(selectedAccount?.balance ?? "0")} 
-                />
+                currentBalance={parseFloat(selectedAccount?.balance ?? "0")}
+              />
             )}
 
             {activeTab === "cards" && <CardManager accounts={data.accounts} />}
@@ -396,7 +396,7 @@ const AppContent: React.FC<AppContentProps> = ({
                   onClick={() => submitAction(modalState.type)}
                   className={`flex-1 py-3 rounded-xl text-white transition-all duration-200 font-medium hover:scale-105 ${modalState.type === "deleteAccount"
                     ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-lg shadow-red-500/30"
-                    : "bg-gradient-to-r from-[rgb(var(--accent-primary))] to-[rgb(var(--accent-secondary))] hover:shadow-lg hover:shadow-[rgba(var(--accent-glow),0.4)]"
+                    : "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 shadow-lg shadow-indigo-500/30"
                     }`}
                 >
                   {modalState.type === "deleteAccount" ? t("common.delete") : t("common.confirm")}

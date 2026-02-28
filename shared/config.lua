@@ -6,6 +6,8 @@ Config.OpenCommand = "banco"
 Config.Locale = 'es'
 Config.AutoVersionChecker = true -- Enable automatic version checking
 
+Config.DisablePhoneApp = true -- Disable the phone app, useful if you want to use a custom phone or no phone at all
+
 Config.AllowedGroups = {
     qb = { "admin", "god" },         -- QBCore roles
     esx = { "admin", "superadmin" }, -- ESX groups
