@@ -104,7 +104,7 @@ export const SavingsManager: React.FC<SavingsManagerProps> = ({
             <Card className="p-4 flex items-center gap-3">
                 <TrendingUp size={20} className="text-green-400" />
                 <span className="text-sm text-[rgb(var(--text-secondary))]">
-                    {t("savings.interestInfo", { rate: String((config.interestRate * 100).toFixed(1)) })}
+                    {t("savings.interestInfo", { rate: String(Number(config.interestRate).toFixed(1)) })}
                 </span>
             </Card>
 

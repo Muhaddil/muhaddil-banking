@@ -1,76 +1,158 @@
 -- Execute this file to manually create all required tables
-
 -- Table: bank_accounts
-CREATE TABLE IF NOT EXISTS `bank_accounts` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `owner` VARCHAR(50) NOT NULL,
-    `account_name` VARCHAR(100) NOT NULL,
-    `balance` DECIMAL(20,2) DEFAULT 0.00,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX(`owner`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE
+    IF NOT EXISTS `bank_accounts` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `owner` VARCHAR(50) NOT NULL,
+        `account_name` VARCHAR(100) NOT NULL,
+        `balance` DECIMAL(20, 2) DEFAULT 0.00,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX (`owner`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Table: bank_shared_access
-CREATE TABLE IF NOT EXISTS `bank_shared_access` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `account_id` INT NOT NULL,
-    `user_identifier` VARCHAR(50) NOT NULL,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`account_id`) REFERENCES `bank_accounts`(`id`) ON DELETE CASCADE,
-    INDEX(`account_id`),
-    INDEX(`user_identifier`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE
+    IF NOT EXISTS `bank_shared_access` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `account_id` INT NOT NULL,
+        `user_identifier` VARCHAR(50) NOT NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (`account_id`) REFERENCES `bank_accounts` (`id`) ON DELETE CASCADE,
+        INDEX (`account_id`),
+        INDEX (`user_identifier`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Table: bank_transactions
-CREATE TABLE IF NOT EXISTS `bank_transactions` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `account_id` INT NOT NULL,
-    `type` VARCHAR(50) NOT NULL,
-    `amount` DECIMAL(20,2) NOT NULL,
-    `description` TEXT,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`account_id`) REFERENCES `bank_accounts`(`id`) ON DELETE CASCADE,
-    INDEX(`account_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE
+    IF NOT EXISTS `bank_transactions` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `account_id` INT NOT NULL,
+        `type` VARCHAR(50) NOT NULL,
+        `amount` DECIMAL(20, 2) NOT NULL,
+        `description` TEXT,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (`account_id`) REFERENCES `bank_accounts` (`id`) ON DELETE CASCADE,
+        INDEX (`account_id`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Table: bank_loans
-CREATE TABLE IF NOT EXISTS `bank_loans` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `user_identifier` VARCHAR(50) NOT NULL,
-    `amount` DECIMAL(20,2) NOT NULL,
-    `remaining` DECIMAL(20,2) NOT NULL,
-    `interest_rate` DECIMAL(5,2) NOT NULL,
-    `installments` INT NOT NULL,
-    `status` VARCHAR(20) DEFAULT 'active',
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX(`user_identifier`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE
+    IF NOT EXISTS `bank_loans` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `user_identifier` VARCHAR(50) NOT NULL,
+        `amount` DECIMAL(20, 2) NOT NULL,
+        `remaining` DECIMAL(20, 2) NOT NULL,
+        `interest_rate` DECIMAL(5, 2) NOT NULL,
+        `installments` INT NOT NULL,
+        `status` VARCHAR(20) DEFAULT 'active',
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX (`user_identifier`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Table: bank_ownership
-CREATE TABLE IF NOT EXISTS `bank_ownership` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `owner` VARCHAR(50) NOT NULL,
-    `bank_name` VARCHAR(100) NOT NULL,
-    `commission_rate` DECIMAL(5,4) DEFAULT 0.0100,
-    `total_earned` DECIMAL(20,2) DEFAULT 0.00,
-    `purchased_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `for_sale` TINYINT(1) DEFAULT 0,
-    `sale_price` DECIMAL(20,2) DEFAULT 0.00,
-    `pending_earnings` DECIMAL(20,2) DEFAULT 0.00,
-    INDEX(`owner`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE
+    IF NOT EXISTS `bank_ownership` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `owner` VARCHAR(50) NOT NULL,
+        `bank_name` VARCHAR(100) NOT NULL,
+        `commission_rate` DECIMAL(5, 4) DEFAULT 0.0100,
+        `total_earned` DECIMAL(20, 2) DEFAULT 0.00,
+        `purchased_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `for_sale` TINYINT (1) DEFAULT 0,
+        `sale_price` DECIMAL(20, 2) DEFAULT 0.00,
+        `pending_earnings` DECIMAL(20, 2) DEFAULT 0.00,
+        INDEX (`owner`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Table: bank_cards
-CREATE TABLE IF NOT EXISTS `bank_cards` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `account_id` INT NOT NULL,
-    `owner` VARCHAR(50) NOT NULL,
-    `card_number` VARCHAR(20) NOT NULL,
-    `pin` VARCHAR(4) NOT NULL,
-    `is_blocked` TINYINT(1) DEFAULT 0,
-    `failed_attempts` INT DEFAULT 0,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`account_id`) REFERENCES `bank_accounts`(`id`) ON DELETE CASCADE,
-    INDEX(`owner`),
-    INDEX(`card_number`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE
+    IF NOT EXISTS `bank_cards` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `account_id` INT NOT NULL,
+        `owner` VARCHAR(50) NOT NULL,
+        `card_number` VARCHAR(20) NOT NULL,
+        `pin` VARCHAR(4) NOT NULL,
+        `is_blocked` TINYINT (1) DEFAULT 0,
+        `failed_attempts` INT DEFAULT 0,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (`account_id`) REFERENCES `bank_accounts` (`id`) ON DELETE CASCADE,
+        INDEX (`owner`),
+        INDEX (`card_number`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE
+    IF NOT EXISTS `bank_savings_accounts` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `account_id` INT NOT NULL,
+        `owner` VARCHAR(50) NOT NULL,
+        `goal_name` VARCHAR(100) NOT NULL,
+        `goal_amount` DECIMAL(20, 2) DEFAULT 0.00,
+        `current_amount` DECIMAL(20, 2) DEFAULT 0.00,
+        `interest_rate` DECIMAL(5, 4) DEFAULT 0.0200,
+        `last_interest_date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (`account_id`) REFERENCES `bank_accounts` (`id`) ON DELETE CASCADE,
+        INDEX (`owner`),
+        INDEX (`account_id`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE
+    IF NOT EXISTS `bank_contacts` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `owner` VARCHAR(50) NOT NULL,
+        `contact_name` VARCHAR(100) NOT NULL,
+        `contact_account_id` INT NOT NULL,
+        `notes` TEXT DEFAULT NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX (`owner`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE
+    IF NOT EXISTS `bank_transfer_requests` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `requester_identifier` VARCHAR(50) NOT NULL,
+        `target_identifier` VARCHAR(50) NOT NULL,
+        `amount` DECIMAL(20, 2) NOT NULL,
+        `requester_account_id` INT NOT NULL,
+        `target_account_id` INT DEFAULT NULL,
+        `status` VARCHAR(20) DEFAULT 'pending',
+        `message` TEXT DEFAULT NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `resolved_at` TIMESTAMP NULL DEFAULT NULL,
+        INDEX (`requester_identifier`),
+        INDEX (`target_identifier`),
+        INDEX (`status`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE
+    IF NOT EXISTS `bank_loan_payments` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `loan_id` INT NOT NULL,
+        `amount` DECIMAL(20, 2) NOT NULL,
+        `payment_type` VARCHAR(20) DEFAULT 'manual',
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (`loan_id`) REFERENCES `bank_loans` (`id`) ON DELETE CASCADE,
+        INDEX (`loan_id`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE
+    IF NOT EXISTS `bank_scheduled_transfers` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `owner` VARCHAR(50) NOT NULL,
+        `from_account_id` INT NOT NULL,
+        `to_account_id` INT NOT NULL,
+        `amount` DECIMAL(20, 2) NOT NULL,
+        `frequency` VARCHAR(20) DEFAULT 'weekly',
+        `day_of_week` INT DEFAULT 1,
+        `hour` INT DEFAULT 12,
+        `minute` INT DEFAULT 0,
+        `enabled` TINYINT (1) DEFAULT 1,
+        `description` VARCHAR(200) DEFAULT NULL,
+        `last_executed` TIMESTAMP NULL DEFAULT NULL,
+        `next_execution` TIMESTAMP NULL DEFAULT NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (`from_account_id`) REFERENCES `bank_accounts` (`id`) ON DELETE CASCADE,
+        INDEX (`owner`),
+        INDEX (`enabled`),
+        INDEX (`next_execution`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;

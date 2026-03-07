@@ -332,6 +332,11 @@ RegisterNetEvent('muhaddil_bank:adminAddMoney', function(accountId, amount)
     amount = tonumber(amount)
     if not accountId or not amount or amount <= 0 then return end
 
+    local account = MySQL.single.await('SELECT id FROM bank_accounts WHERE id = ?', { accountId })
+    if not account then
+        return Notify(src, 'error', 'La cuenta no existe')
+    end
+
     MySQL.query.await('UPDATE bank_accounts SET balance = balance + ? WHERE id = ?', { amount, accountId })
     MySQL.insert.await(
         'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
@@ -349,6 +354,11 @@ RegisterNetEvent('muhaddil_bank:adminRemoveMoney', function(accountId, amount)
     accountId = tonumber(accountId)
     amount = tonumber(amount)
     if not accountId or not amount or amount <= 0 then return end
+
+    local account = MySQL.single.await('SELECT id FROM bank_accounts WHERE id = ?', { accountId })
+    if not account then
+        return Notify(src, 'error', 'La cuenta no existe')
+    end
 
     MySQL.query.await('UPDATE bank_accounts SET balance = balance - ? WHERE id = ?', { amount, accountId })
     MySQL.insert.await(
