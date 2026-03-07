@@ -117,6 +117,83 @@ MySQL.ready(function()
                 INDEX(`owner`),
                 INDEX(`card_number`)
             )
+        ]],
+        [[
+            CREATE TABLE IF NOT EXISTS `bank_savings_accounts` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `account_id` INT NOT NULL,
+                `owner` VARCHAR(50) NOT NULL,
+                `goal_name` VARCHAR(100) NOT NULL,
+                `goal_amount` DECIMAL(20,2) DEFAULT 0.00,
+                `current_amount` DECIMAL(20,2) DEFAULT 0.00,
+                `interest_rate` DECIMAL(5,4) DEFAULT 0.0200,
+                `last_interest_date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (`account_id`) REFERENCES `bank_accounts`(`id`) ON DELETE CASCADE,
+                INDEX(`owner`),
+                INDEX(`account_id`)
+            )
+        ]],
+        [[
+            CREATE TABLE IF NOT EXISTS `bank_contacts` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `owner` VARCHAR(50) NOT NULL,
+                `contact_name` VARCHAR(100) NOT NULL,
+                `contact_account_id` INT NOT NULL,
+                `notes` TEXT DEFAULT NULL,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX(`owner`)
+            )
+        ]],
+        [[
+            CREATE TABLE IF NOT EXISTS `bank_transfer_requests` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `requester_identifier` VARCHAR(50) NOT NULL,
+                `target_identifier` VARCHAR(50) NOT NULL,
+                `amount` DECIMAL(20,2) NOT NULL,
+                `requester_account_id` INT NOT NULL,
+                `target_account_id` INT DEFAULT NULL,
+                `status` VARCHAR(20) DEFAULT 'pending',
+                `message` TEXT DEFAULT NULL,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                `resolved_at` TIMESTAMP NULL DEFAULT NULL,
+                INDEX(`requester_identifier`),
+                INDEX(`target_identifier`),
+                INDEX(`status`)
+            )
+        ]],
+        [[
+            CREATE TABLE IF NOT EXISTS `bank_loan_payments` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `loan_id` INT NOT NULL,
+                `amount` DECIMAL(20,2) NOT NULL,
+                `payment_type` VARCHAR(20) DEFAULT 'manual',
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (`loan_id`) REFERENCES `bank_loans`(`id`) ON DELETE CASCADE,
+                INDEX(`loan_id`)
+            )
+        ]],
+        [[
+            CREATE TABLE IF NOT EXISTS `bank_scheduled_transfers` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `owner` VARCHAR(50) NOT NULL,
+                `from_account_id` INT NOT NULL,
+                `to_account_id` INT NOT NULL,
+                `amount` DECIMAL(20,2) NOT NULL,
+                `frequency` VARCHAR(20) DEFAULT 'weekly',
+                `day_of_week` INT DEFAULT 1,
+                `hour` INT DEFAULT 12,
+                `minute` INT DEFAULT 0,
+                `enabled` TINYINT(1) DEFAULT 1,
+                `description` VARCHAR(200) DEFAULT NULL,
+                `last_executed` TIMESTAMP NULL DEFAULT NULL,
+                `next_execution` TIMESTAMP NULL DEFAULT NULL,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (`from_account_id`) REFERENCES `bank_accounts`(`id`) ON DELETE CASCADE,
+                INDEX(`owner`),
+                INDEX(`enabled`),
+                INDEX(`next_execution`)
+            )
         ]]
     }
 
@@ -152,6 +229,21 @@ MySQL.ready(function()
     if tonumber(bankTransactionsHasBankLocation) == 0 then
         MySQL.query.await('ALTER TABLE bank_transactions ADD COLUMN bank_location VARCHAR(50) DEFAULT NULL')
         MySQL.query.await('CREATE INDEX bank_location_idx ON bank_transactions (bank_location)')
+    end
+
+    local loansHasLoanType = MySQL.scalar.await([[
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'bank_loans'
+          AND COLUMN_NAME = 'loan_type'
+    ]])
+
+    if tonumber(loansHasLoanType) == 0 then
+        MySQL.query.await("ALTER TABLE bank_loans ADD COLUMN loan_type VARCHAR(20) DEFAULT 'personal'")
+        MySQL.query.await("ALTER TABLE bank_loans ADD COLUMN paid_installments INT DEFAULT 0")
+        MySQL.query.await("ALTER TABLE bank_loans ADD COLUMN next_payment_date TIMESTAMP NULL DEFAULT NULL")
+        MySQL.query.await("ALTER TABLE bank_loans ADD COLUMN credit_score_snapshot INT DEFAULT 500")
     end
 
     print('^2[Bank System] Database initialized successfully^7')
@@ -371,6 +463,127 @@ function buildCronExpression(intervalHours)
     end
 end
 
+function GetPlayerCreditScore(identifier)
+    if not Config.Loans.CreditScore or not Config.Loans.CreditScore.Enabled then
+        return Config.Loans.CreditScore and Config.Loans.CreditScore.BaseScore or 500
+    end
+
+    local baseScore = Config.Loans.CreditScore.BaseScore
+    local maxScore = Config.Loans.CreditScore.MaxScore
+
+    local paidLoans = MySQL.scalar.await([[
+        SELECT COUNT(*) FROM bank_loans
+        WHERE user_identifier = ? AND status = 'paid'
+    ]], { identifier }) or 0
+
+    local penalties = MySQL.scalar.await([[
+        SELECT COUNT(*) FROM bank_loan_payments
+        WHERE loan_id IN (SELECT id FROM bank_loans WHERE user_identifier = ?)
+        AND payment_type = 'penalty'
+    ]], { identifier }) or 0
+
+    local paidPayments = MySQL.scalar.await([[
+        SELECT COUNT(*) FROM bank_loan_payments
+        WHERE loan_id IN (SELECT id FROM bank_loans WHERE user_identifier = ?)
+        AND payment_type IN ('manual', 'automatic')
+    ]], { identifier }) or 0
+
+    local score = baseScore
+        + (tonumber(paidPayments) * Config.Loans.CreditScore.PaymentBonus)
+        + (tonumber(paidLoans) * 20)
+        - (tonumber(penalties) * Config.Loans.CreditScore.MissedPenalty)
+
+    return math.max(300, math.min(maxScore, score))
+end
+
+function CalculateNextExecution(frequency, dayOfWeek, hour, minute)
+    local now = os.time()
+    local nextExec = now
+
+    if frequency == 'daily' then
+        local today = os.date('*t', now)
+        nextExec = os.time({
+            year = today.year,
+            month = today.month,
+            day = today.day,
+            hour = hour,
+            min = minute,
+            sec = 0
+        })
+        if nextExec <= now then
+            nextExec = nextExec + 86400
+        end
+    elseif frequency == 'weekly' then
+        local today = os.date('*t', now)
+        local currentDay = today.wday
+        local daysUntil = (dayOfWeek - currentDay + 7) % 7
+        if daysUntil == 0 then
+            local todayExec = os.time({
+                year = today.year,
+                month = today.month,
+                day = today.day,
+                hour = hour,
+                min = minute,
+                sec = 0
+            })
+            if todayExec <= now then
+                daysUntil = 7
+            end
+        end
+        nextExec = os.time({
+            year = today.year,
+            month = today.month,
+            day = today.day + daysUntil,
+            hour = hour,
+            min = minute,
+            sec = 0
+        })
+    elseif frequency == 'biweekly' then
+        local today = os.date('*t', now)
+        local currentDay = today.wday
+        local daysUntil = (dayOfWeek - currentDay + 7) % 7
+        if daysUntil == 0 then
+            local todayExec = os.time({
+                year = today.year,
+                month = today.month,
+                day = today.day,
+                hour = hour,
+                min = minute,
+                sec = 0
+            })
+            if todayExec <= now then
+                daysUntil = 14
+            end
+        end
+        nextExec = os.time({
+            year = today.year,
+            month = today.month,
+            day = today.day + daysUntil,
+            hour = hour,
+            min = minute,
+            sec = 0
+        })
+    elseif frequency == 'monthly' then
+        local today = os.date('*t', now)
+        local nextMonth = today.month + 1
+        local nextYear = today.year
+        if nextMonth > 12 then
+            nextMonth = 1
+            nextYear = nextYear + 1
+        end
+        nextExec = os.time({
+            year = nextYear,
+            month = nextMonth,
+            day = math.min(today.day, 28),
+            hour = hour,
+            min = minute,
+            sec = 0
+        })
+    end
+
+    return os.date('%Y-%m-%d %H:%M:%S', nextExec)
+end
+
 -- exports('GetPlayer', GetPlayer)
 -- exports('GetPlayerIdentifier', GetPlayerIdentifier)
 -- exports('GetPlayerMoney', GetPlayerMoney)
@@ -383,3 +596,5 @@ exports('ApplyBankCommission', ApplyBankCommission)
 exports('GenerateCardNumber', GenerateCardNumber)
 exports('GetBankCoords', GetBankCoords)
 exports('IsPlayerAtHisBank', IsPlayerAtHisBank)
+exports('GetPlayerCreditScore', GetPlayerCreditScore)
+exports('CalculateNextExecution', CalculateNextExecution)

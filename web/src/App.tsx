@@ -9,6 +9,7 @@ import { ThemeProvider } from "./contexts/ThemeContext"
 import { LocaleProvider } from "./contexts/LocaleContext"
 import { QuickActions } from "./components/QuickActions"
 import { useLocale } from "./hooks/useLocale"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/Select"
 
 import { Sidebar } from "./components/Sidebar"
 import { Dashboard } from "./components/Dashboard"
@@ -18,6 +19,11 @@ import { BankManager } from "./components/BankManager"
 import { StatsView } from "./components/StatsView"
 import { AtmInterface } from "./components/AtmInterface"
 import { CardManager } from "./components/CardManager"
+import { SavingsManager } from "./components/SavingsManager"
+import { ContactManager } from "./components/ContactManager"
+import { TransferRequests } from "./components/TransferRequests"
+import { ScheduledTransfers } from "./components/ScheduledTransfers"
+import { AdminPanel } from "./components/AdminPanel"
 
 type DashboardAction =
   | "deposit"
@@ -92,8 +98,19 @@ interface AppData {
   sharedAccounts: Account[]
   transactions: Transaction[]
   loans: Loan[]
+  loanPayments: Record<string, any[]>
+  loanConfig: any
+  creditScore: number
   ownedBanks: OwnedBank[]
   availableBanks?: AvailableBank[]
+  savings: any[]
+  savingsConfig: any
+  contacts: any[]
+  contactsConfig: any
+  transferRequests: { incoming: any[]; outgoing: any[] }
+  transferRequestsConfig: any
+  scheduledTransfers: any[]
+  scheduledTransfersConfig: any
   playerMoney: number
   maxAccounts?: number
   currentBank?: string
@@ -102,6 +119,7 @@ interface AppData {
   currentBankCommissionRate?: number
   currentBankIsOwned?: boolean
   bankManagementEnabled?: boolean
+  isAdmin?: boolean
 }
 
 interface ModalState {
@@ -222,6 +240,7 @@ const AppContent: React.FC<AppContentProps> = ({
             currentBank={data.currentBank}
             currentBankType={data.currentBankType}
             bankManagementEnabled={data.bankManagementEnabled}
+            isAdmin={data.isAdmin}
           />
 
           <main className="flex-1 p-4 md:p-8 overflow-y-auto custom-scrollbar">
@@ -281,6 +300,57 @@ const AppContent: React.FC<AppContentProps> = ({
             {activeTab === "cards" && <CardManager accounts={data.accounts} />}
 
             {activeTab === "banks" && <BankManager ownedBanks={data.ownedBanks} availableBanks={data.availableBanks} />}
+
+            {activeTab === "savings" && (
+              <SavingsManager
+                savings={data.savings}
+                accounts={data.accounts}
+                config={data.savingsConfig}
+                onCreateSavings={(d) => fetchNui("createSavings", d)}
+                onDepositSavings={(d) => fetchNui("depositSavings", d)}
+                onWithdrawSavings={(d) => fetchNui("withdrawSavings", d)}
+                onDeleteSavings={(id) => fetchNui("deleteSavings", { savingsId: id })}
+              />
+            )}
+
+            {activeTab === "contacts" && (
+              <ContactManager
+                contacts={data.contacts}
+                config={data.contactsConfig}
+                onAddContact={(d) => fetchNui("addContact", d)}
+                onUpdateContact={(d) => fetchNui("updateContact", d)}
+                onRemoveContact={(id) => fetchNui("removeContact", { contactId: id })}
+              />
+            )}
+
+            {activeTab === "requests" && (
+              <TransferRequests
+                incoming={data.transferRequests.incoming}
+                outgoing={data.transferRequests.outgoing}
+                accounts={data.accounts}
+                config={data.transferRequestsConfig}
+                onCreateRequest={(d) => fetchNui("createTransferRequest", d)}
+                onAcceptRequest={(d) => fetchNui("acceptTransferRequest", d)}
+                onRejectRequest={(id) => fetchNui("rejectTransferRequest", { requestId: id })}
+                onCancelRequest={(id) => fetchNui("cancelTransferRequest", { requestId: id })}
+              />
+            )}
+
+            {activeTab === "scheduled" && (
+              <ScheduledTransfers
+                transfers={data.scheduledTransfers}
+                accounts={data.accounts}
+                config={data.scheduledTransfersConfig}
+                onCreateTransfer={(d) => fetchNui("createScheduledTransfer", d)}
+                onUpdateTransfer={(d) => fetchNui("updateScheduledTransfer", d)}
+                onToggleTransfer={(id) => fetchNui("toggleScheduledTransfer", { transferId: id })}
+                onDeleteTransfer={(id) => fetchNui("deleteScheduledTransfer", { transferId: id })}
+              />
+            )}
+
+            {activeTab === "admin" && (
+              <AdminPanel onClose={() => setActiveTab("accounts")} />
+            )}
           </main>
         </div>
       </div>
@@ -346,13 +416,39 @@ const AppContent: React.FC<AppContentProps> = ({
                 )}
 
               {modalState.type === "transfer" && (
-                <input
-                  type="number"
-                  placeholder={t("modals.transfer.toAccount")}
-                  value={formData.transferToAccount}
-                  onChange={(e) => setFormData({ ...formData, transferToAccount: e.target.value })}
-                  className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white focus:border-indigo-500 outline-none"
-                />
+                <div className="space-y-3">
+                  {data.contacts && data.contacts.length > 0 && (
+                    <div className="relative">
+                      <Select
+                        onValueChange={(value: string) => {
+                          if (value) setFormData({ ...formData, transferToAccount: value })
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("contacts.select", "O selecciona un contacto...")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {data.contacts.map((contact) => (
+                            <SelectItem key={contact.id} value={String(contact.contact_account_id)}>
+                              {contact.contact_name} - #{contact.contact_account_id}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
+                        ▼
+                      </div>
+                    </div>
+                  )}
+
+                  <input
+                    type="number"
+                    placeholder={t("modals.transfer.toAccount")}
+                    value={formData.transferToAccount}
+                    onChange={(e) => setFormData({ ...formData, transferToAccount: e.target.value })}
+                    className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white focus:border-indigo-500 outline-none"
+                  />
+                </div>
               )}
 
               {(modalState.type === "addSharedUser" || modalState.type === "removeSharedUser") && (
@@ -417,8 +513,19 @@ const App = () => {
     sharedAccounts: [],
     transactions: [],
     loans: [],
+    loanPayments: {},
+    loanConfig: {},
+    creditScore: 500,
     ownedBanks: [],
     availableBanks: [],
+    savings: [],
+    savingsConfig: { enabled: false, maxPerAccount: 3, interestRate: 0.02, minDeposit: 100, maxGoalAmount: 1000000 },
+    contacts: [],
+    contactsConfig: { enabled: false, maxContacts: 20 },
+    transferRequests: { incoming: [], outgoing: [] },
+    transferRequestsConfig: { enabled: false, maxPending: 10 },
+    scheduledTransfers: [],
+    scheduledTransfersConfig: { enabled: false, maxPerPlayer: 10, minAmount: 50, frequencies: ['daily', 'weekly', 'biweekly', 'monthly'] },
     playerMoney: 0,
     maxAccounts: undefined,
   })
@@ -461,8 +568,19 @@ const App = () => {
       sharedAccounts: sharedAccountsList,
       transactions: payload.transactions || [],
       loans: payload.loans || [],
+      loanPayments: payload.loanPayments || {},
+      loanConfig: payload.loanConfig || {},
+      creditScore: payload.creditScore ?? prev.creditScore,
       ownedBanks: payload.ownedBanks || [],
       availableBanks: payload.availableBanks || [],
+      savings: payload.savings || [],
+      savingsConfig: payload.savingsConfig || prev.savingsConfig,
+      contacts: payload.contacts || [],
+      contactsConfig: payload.contactsConfig || prev.contactsConfig,
+      transferRequests: payload.transferRequests || prev.transferRequests,
+      transferRequestsConfig: payload.transferRequestsConfig || prev.transferRequestsConfig,
+      scheduledTransfers: payload.scheduledTransfers || [],
+      scheduledTransfersConfig: payload.scheduledTransfersConfig || prev.scheduledTransfersConfig,
       playerMoney: payload.cash ?? 0,
       maxAccounts: payload.maxAccounts,
       currentBank: incomingCurrentBank ?? prev.currentBank,
@@ -583,6 +701,11 @@ const App = () => {
       .filter((t) => t.account_id === selectedAccount.id && parseFloat(t.amount) < 0)
       .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0)
   }
+
+  useNuiEvent("openAdminPanel", () => {
+    setActiveTab("admin")
+    setData((prev) => ({ ...prev, isAdmin: true }))
+  })
 
   if (!visible) return null
 

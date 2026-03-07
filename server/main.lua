@@ -131,8 +131,19 @@ lib.callback.register('muhaddil_bank:getData', function(source, bankId)
 
     local loans = MySQL.query.await([[
         SELECT * FROM bank_loans
-        WHERE user_identifier = ? AND status = 'active'
+        WHERE user_identifier = ? AND (status = 'active' OR status = 'paid')
+        ORDER BY created_at DESC
     ]], { identifier })
+
+    local loanPayments = {}
+    for _, loan in ipairs(loans or {}) do
+        local payments = MySQL.query.await([[
+            SELECT * FROM bank_loan_payments
+            WHERE loan_id = ?
+            ORDER BY created_at DESC
+        ]], { loan.id })
+        loanPayments[tostring(loan.id)] = payments or {}
+    end
 
     local ownedBanks = MySQL.query.await([[
         SELECT * FROM bank_ownership
@@ -154,6 +165,52 @@ lib.callback.register('muhaddil_bank:getData', function(source, bankId)
         end
     end
 
+    local savings = MySQL.query.await([[
+        SELECT bsa.*, ba.account_name
+        FROM bank_savings_accounts bsa
+        INNER JOIN bank_accounts ba ON bsa.account_id = ba.id
+        WHERE bsa.owner = ?
+        ORDER BY bsa.created_at DESC
+    ]], { identifier })
+
+    local contacts = MySQL.query.await([[
+        SELECT bc.*, ba.account_name as contact_account_name
+        FROM bank_contacts bc
+        LEFT JOIN bank_accounts ba ON bc.contact_account_id = ba.id
+        WHERE bc.owner = ?
+        ORDER BY bc.contact_name ASC
+    ]], { identifier })
+
+    local incomingRequests = MySQL.query.await([[
+        SELECT btr.*, ba.account_name as requester_account_name
+        FROM bank_transfer_requests btr
+        LEFT JOIN bank_accounts ba ON btr.requester_account_id = ba.id
+        WHERE btr.target_identifier = ? AND btr.status = 'pending'
+        ORDER BY btr.created_at DESC
+    ]], { identifier })
+
+    local outgoingRequests = MySQL.query.await([[
+        SELECT btr.*, ba.account_name as requester_account_name
+        FROM bank_transfer_requests btr
+        LEFT JOIN bank_accounts ba ON btr.requester_account_id = ba.id
+        WHERE btr.requester_identifier = ?
+        ORDER BY btr.created_at DESC
+        LIMIT 50
+    ]], { identifier })
+
+    local scheduledTransfers = MySQL.query.await([[
+        SELECT bst.*,
+            ba_from.account_name as from_account_name,
+            ba_to.account_name as to_account_name
+        FROM bank_scheduled_transfers bst
+        LEFT JOIN bank_accounts ba_from ON bst.from_account_id = ba_from.id
+        LEFT JOIN bank_accounts ba_to ON bst.to_account_id = ba_to.id
+        WHERE bst.owner = ?
+        ORDER BY bst.created_at DESC
+    ]], { identifier })
+
+    local creditScore = GetPlayerCreditScore(identifier)
+
     local cash = GetPlayerMoney(source)
 
     return {
@@ -161,8 +218,44 @@ lib.callback.register('muhaddil_bank:getData', function(source, bankId)
         maxAccounts = Config.Accounts.MaxPerPlayer,
         transactions = transactions,
         loans = loans or {},
+        loanPayments = loanPayments,
+        loanConfig = {
+            types = Config.Loans.Types,
+            maxActiveLoans = Config.Loans.MaxActiveLoans,
+            earlyRepaymentDiscount = Config.Loans.EarlyRepaymentDiscount,
+            creditScoreEnabled = Config.Loans.CreditScore and Config.Loans.CreditScore.Enabled or false,
+        },
+        creditScore = creditScore,
         ownedBanks = ownedBanks or {},
         availableBanks = availableBanks,
+        savings = savings or {},
+        savingsConfig = {
+            enabled = Config.Savings.Enabled,
+            maxPerAccount = Config.Savings.MaxPerAccount,
+            interestRate = Config.Savings.InterestRate,
+            minDeposit = Config.Savings.MinDeposit,
+            maxGoalAmount = Config.Savings.MaxGoalAmount,
+        },
+        contacts = contacts or {},
+        contactsConfig = {
+            enabled = Config.Contacts.Enabled,
+            maxContacts = Config.Contacts.MaxContacts,
+        },
+        transferRequests = {
+            incoming = incomingRequests or {},
+            outgoing = outgoingRequests or {},
+        },
+        transferRequestsConfig = {
+            enabled = Config.TransferRequests.Enabled,
+            maxPending = Config.TransferRequests.MaxPendingRequests,
+        },
+        scheduledTransfers = scheduledTransfers or {},
+        scheduledTransfersConfig = {
+            enabled = Config.ScheduledTransfers.Enabled,
+            maxPerPlayer = Config.ScheduledTransfers.MaxPerPlayer,
+            minAmount = Config.ScheduledTransfers.MinAmount,
+            frequencies = Config.ScheduledTransfers.Frequencies,
+        },
         cash = cash,
         playerIdentifier = identifier,
         currentBankInfo = currentBankInfo
@@ -392,32 +485,55 @@ function requestLoan(src, data)
 
     local amount = tonumber(data.amount)
     local installments = tonumber(data.installments)
-    local interestRate = tonumber(data.interestRate) or Config.Loans.InterestRate * 100
+    local loanType = data.loanType or 'personal'
+
+    local typeConfig = Config.Loans.Types and Config.Loans.Types[loanType]
+    if not typeConfig then
+        loanType = 'personal'
+        typeConfig = Config.Loans.Types and Config.Loans.Types['personal'] or {
+            MaxAmount = Config.Loans.MaxAmount,
+            InterestRate = Config.Loans.InterestRate,
+            MaxInstallments = Config.Loans.MaxInstallments
+        }
+    end
+
+    local interestRate = tonumber(data.interestRate) or (typeConfig.InterestRate * 100)
 
     if not amount or amount <= 0 or not installments or installments <= 0 then
         return false, 'Datos inválidos'
     end
 
-    if amount < Config.Loans.MinAmount or amount > Config.Loans.MaxAmount then
-        return false, Locale('server.invalid_amount')
+    local minAmount = Config.Loans.MinAmount
+    local maxAmount = typeConfig.MaxAmount or Config.Loans.MaxAmount
+    local maxInstallments = typeConfig.MaxInstallments or Config.Loans.MaxInstallments
+
+    if amount < minAmount or amount > maxAmount then
+        return false, Notify(src, 'error', Locale('server.invalid_amount'))
     end
 
+    if installments > maxInstallments then
+        installments = maxInstallments
+    end
+
+    local maxActiveLoans = Config.Loans.MaxActiveLoans or 1
     local activeLoans = MySQL.scalar.await(
         'SELECT COUNT(*) FROM bank_loans WHERE user_identifier = ? AND status = "active"', { identifier }
     )
-    if activeLoans > 0 then
-        return false, Locale('server.loan_active')
+    if activeLoans >= maxActiveLoans then
+        return false, Locale('server.max_loans_reached')
     end
+
+    local creditScore = GetPlayerCreditScore(identifier)
 
     local totalWithInterest = amount * (1 + (interestRate / 100))
 
-    MySQL.insert.await(
-        'INSERT INTO bank_loans (user_identifier, amount, remaining, interest_rate, installments) VALUES (?, ?, ?, ?, ?)',
-        { identifier, amount, totalWithInterest, interestRate, installments }
-    )
+    local loanId = MySQL.insert.await([[
+        INSERT INTO bank_loans (user_identifier, amount, remaining, interest_rate, installments, loan_type, credit_score_snapshot)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ]], { identifier, amount, totalWithInterest, interestRate, installments, loanType, creditScore })
 
     AddPlayerMoney(src, amount)
-    Notify(src, 'success', 'Préstamo aprobado: ' .. amount .. '$')
+    Notify(src, 'success', Locale('server.loan_approved') .. ': $' .. amount)
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 
     return true
@@ -436,56 +552,64 @@ function payLoan(src, loanId, amount, isFromPhone)
         return false, Locale('server.invalid_amount')
     end
 
-    if not amount < GetPlayerBankMoney(source) then
-        return false, Locale('server.insufficient_money')
+    local loan = MySQL.single.await(
+        'SELECT * FROM bank_loans WHERE id = ? AND user_identifier = ? AND status = ?',
+        { loanId, identifier, 'active' }
+    )
+
+    if not loan then
+        return false, Locale('server.loan_not_found')
     end
 
-    local remaining = MySQL.scalar.await(
-        'SELECT remaining FROM bank_loans WHERE id = ? AND user_identifier = ?',
-        { loanId, identifier }
-    )
-    remaining = tonumber(remaining)
-
+    local remaining = tonumber(loan.remaining)
     if not remaining then
         return false, Locale('server.loan_not_found')
+    end
+
+    local discount = 0
+    if amount >= remaining and Config.Loans.EarlyRepaymentDiscount then
+        local paidInstallments = tonumber(loan.paid_installments) or 0
+        if paidInstallments < (tonumber(loan.installments) - 1) then
+            discount = math.floor(remaining * Config.Loans.EarlyRepaymentDiscount)
+            remaining = remaining - discount
+        end
     end
 
     if amount > remaining then
         amount = remaining
     end
 
+    local paymentSuccess = false
     if isFromPhone then
-        if RemovePlayerBankMoney(src, amount) then
-            local newRemaining = remaining - amount
-            local status = (newRemaining <= 0) and 'paid' or 'active'
-
-            MySQL.query.await(
-                'UPDATE bank_loans SET remaining = ?, status = ? WHERE id = ?',
-                { newRemaining, status, loanId }
-            )
-
-            Notify(src, 'success', Locale('server.payment_completed', newRemaining))
-            TriggerClientEvent('muhaddil_bank:refreshData', src)
-            return true, newRemaining
-        else
-            return false, Locale('server.insufficient_money')
-        end
+        paymentSuccess = RemovePlayerBankMoney(src, amount)
     else
-        if RemovePlayerMoney(src, amount) then
-            local newRemaining = remaining - amount
-            local status = (newRemaining <= 0) and 'paid' or 'active'
+        paymentSuccess = RemovePlayerMoney(src, amount)
+    end
 
-            MySQL.query.await(
-                'UPDATE bank_loans SET remaining = ?, status = ? WHERE id = ?',
-                { newRemaining, status, loanId }
-            )
+    if paymentSuccess then
+        local newRemaining = remaining - amount
+        local status = (newRemaining <= 0) and 'paid' or 'active'
+        local newPaidInstallments = (tonumber(loan.paid_installments) or 0) + 1
 
-            Notify(src, 'success', Locale('server.payment_completed', newRemaining))
-            TriggerClientEvent('muhaddil_bank:refreshData', src)
-            return true, newRemaining
-        else
-            return false, Locale('server.insufficient_money')
+        MySQL.query.await(
+            'UPDATE bank_loans SET remaining = ?, status = ?, paid_installments = ? WHERE id = ?',
+            { math.max(0, newRemaining), status, newPaidInstallments, loanId }
+        )
+
+        MySQL.insert.await([[
+            INSERT INTO bank_loan_payments (loan_id, amount, payment_type)
+            VALUES (?, ?, 'manual')
+        ]], { loanId, amount })
+
+        if discount > 0 then
+            Notify(src, 'info', Locale('server.early_repayment_discount', discount))
         end
+
+        Notify(src, 'success', Locale('server.payment_completed', math.max(0, newRemaining)))
+        TriggerClientEvent('muhaddil_bank:refreshData', src)
+        return true, math.max(0, newRemaining)
+    else
+        return false, Locale('server.insufficient_money')
     end
 end
 

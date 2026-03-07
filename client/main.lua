@@ -299,6 +299,121 @@ RegisterNUICallback('renameBank', function(data, cb)
     cb('ok')
 end)
 
+RegisterNUICallback('createSavings', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:createSavings', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('depositSavings', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:depositSavings', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('withdrawSavings', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:withdrawSavings', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('deleteSavings', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:deleteSavings', data.savingsId)
+    cb('ok')
+end)
+
+RegisterNUICallback('addContact', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:addContact', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('updateContact', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:updateContact', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('removeContact', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:removeContact', data.contactId)
+    cb('ok')
+end)
+
+RegisterNUICallback('createTransferRequest', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:createTransferRequest', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('acceptTransferRequest', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:acceptTransferRequest', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('rejectTransferRequest', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:rejectTransferRequest', data.requestId)
+    cb('ok')
+end)
+
+RegisterNUICallback('cancelTransferRequest', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:cancelTransferRequest', data.requestId)
+    cb('ok')
+end)
+
+RegisterNUICallback('createScheduledTransfer', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:createScheduledTransfer', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('updateScheduledTransfer', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:updateScheduledTransfer', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('toggleScheduledTransfer', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:toggleScheduledTransfer', data.transferId)
+    cb('ok')
+end)
+
+RegisterNUICallback('deleteScheduledTransfer', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:deleteScheduledTransfer', data.transferId)
+    cb('ok')
+end)
+
+RegisterNUICallback('getAdminData', function(data, cb)
+    local result = lib.callback.await('muhaddil_bank:getAdminData', false)
+    cb(result or {})
+end)
+
+RegisterNUICallback('adminSearchUser', function(data, cb)
+    local result = lib.callback.await('muhaddil_bank:adminSearchUser', false, data.query)
+    cb(result or {})
+end)
+
+RegisterNUICallback('adminAddMoney', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:adminAddMoney', data.accountId, data.amount)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminRemoveMoney', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:adminRemoveMoney', data.accountId, data.amount)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminCancelLoan', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:adminCancelLoan', data.loanId)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminFreezeAccount', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:adminFreezeAccount', data.accountId)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminDeleteScheduled', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:adminDeleteScheduled', data.transferId)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminCancelRequest', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:adminCancelRequest', data.requestId)
+    cb('ok')
+end)
+
 RegisterNetEvent('muhaddil_bank:refreshData', function()
     if not isOpen then return end
 
@@ -336,6 +451,19 @@ RegisterNetEvent('muhaddil_bank:openBank', function()
     else
         lib.notify({ type = 'error', description = Locale('client.not_near_bank') })
     end
+end)
+
+RegisterNetEvent('muhaddil_bank:openAdminPanel', function()
+    if isOpen then return end
+    isOpen = true
+    SetNuiFocus(true, true)
+    SendNUIMessage({
+        action = 'openAdminPanel',
+    })
+    SendNUIMessage({
+        action = 'setVisible',
+        data = true
+    })
 end)
 
 function SetLocale()

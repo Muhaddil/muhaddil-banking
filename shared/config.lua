@@ -190,3 +190,56 @@ Config.Cards = {
     CanStealCards = true,
     StealChance = 75 -- 75% chance of success
 }
+
+-- Savings Account Settings
+Config.Savings = {
+    Enabled = true,
+    MaxPerAccount = 3,           -- Max savings goals per bank account
+    InterestRate = 0.02,         -- 2% interest rate
+    InterestIntervalHours = 720, -- Every 30 days
+    MinDeposit = 100,            -- Minimum deposit amount
+    MaxGoalAmount = 1000000,     -- Maximum goal amount
+}
+
+-- Contacts Settings
+Config.Contacts = {
+    Enabled = true,
+    MaxContacts = 20, -- Max contacts per player
+}
+
+-- Transfer Requests Settings
+Config.TransferRequests = {
+    Enabled = true,
+    MaxPendingRequests = 10, -- Max pending requests per player
+    ExpirationHours = 72,    -- Requests expire after 72 hours
+}
+
+-- Expanded Loan Settings
+Config.Loans.Types = {
+    personal = { MaxAmount = 100000, InterestRate = 0.10, MaxInstallments = 24 },
+    business = { MaxAmount = 500000, InterestRate = 0.08, MaxInstallments = 48 },
+    mortgage = { MaxAmount = 2000000, InterestRate = 0.05, MaxInstallments = 120 },
+}
+Config.Loans.MaxActiveLoans = 3
+Config.Loans.CreditScore = {
+    Enabled = false, -- Not implemented yet
+    BaseScore = 500,
+    MaxScore = 850,
+    PaymentBonus = 10,                     -- Points gained per on-time payment
+    MissedPenalty = 25,                    -- Points lost per missed payment
+}
+Config.Loans.EarlyRepaymentDiscount = 0.05 -- 5% discount for paying off early
+
+-- Scheduled Transfers Settings
+Config.ScheduledTransfers = {
+    Enabled = true,
+    MaxPerPlayer = 10, -- Max scheduled transfers per player
+    MinAmount = 50,    -- Minimum transfer amount
+    Frequencies = { 'daily', 'weekly', 'biweekly', 'monthly' },
+}
+
+-- Admin Panel Settings
+Config.AdminPanel = {
+    Enabled = true,
+    Command = 'bankpanel', -- Command to open admin panel
+}

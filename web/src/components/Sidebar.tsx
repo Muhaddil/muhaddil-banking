@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { LayoutDashboard, CreditCard, History, Banknote, Building2, LogOut } from "lucide-react"
+import { LayoutDashboard, CreditCard, History, Banknote, Building2, LogOut, PiggyBank, Users, ArrowLeftRight, Repeat, Shield } from "lucide-react"
 import { ThemeSwitcher } from "./ThemeSwitcher"
 import { useLocale } from "../hooks/useLocale"
 
@@ -12,9 +12,10 @@ interface SidebarProps {
     currentBank?: string
     currentBankType?: string
     bankManagementEnabled?: boolean
+    isAdmin?: boolean
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onClose, currentBank, currentBankType, bankManagementEnabled }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onClose, currentBank, currentBankType, bankManagementEnabled, isAdmin }) => {
     const { t } = useLocale()
 
     const bankTitle = currentBank && currentBank.trim() ? currentBank : t("sidebar.bankName")
@@ -32,9 +33,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onClo
         { id: "cards", label: t("sidebar.cards"), icon: <CreditCard size={20} /> },
         { id: "transactions", label: t("sidebar.transactions"), icon: <History size={20} /> },
         { id: "loans", label: t("sidebar.loans"), icon: <Banknote size={20} /> },
+        { id: "savings", label: t("sidebar.savings"), icon: <PiggyBank size={20} /> },
+        { id: "contacts", label: t("sidebar.contacts"), icon: <Users size={20} /> },
+        { id: "requests", label: t("sidebar.requests"), icon: <ArrowLeftRight size={20} /> },
+        { id: "scheduled", label: t("sidebar.scheduled"), icon: <Repeat size={20} /> },
         { id: "stats", label: t("sidebar.stats"), icon: <LayoutDashboard size={20} /> },
         ...(bankManagementEnabled
             ? [{ id: "banks", label: t("sidebar.banks"), icon: <Building2 size={20} /> }]
+            : []),
+        ...(isAdmin
+            ? [{ id: "admin", label: t("sidebar.admin"), icon: <Shield size={20} /> }]
             : []),
     ]
 

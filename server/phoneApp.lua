@@ -59,7 +59,6 @@ local function GetBankData(source)
         table.insert(allAccounts, acc)
     end
 
-    -- Obtener transacciones recientes
     local transactions = {}
     for _, acc in ipairs(allAccounts) do
         local accTransactions = MySQL.query.await([[
@@ -75,18 +74,15 @@ local function GetBankData(source)
         end
     end
 
-    -- Ordenar transacciones por fecha
     table.sort(transactions, function(a, b)
         return a.created_at > b.created_at
     end)
 
-    -- Obtener préstamos activos
     local loans = MySQL.query.await([[
         SELECT * FROM bank_loans
         WHERE user_identifier = ? AND status = 'active'
     ]], { identifier })
 
-    -- Obtener tarjetas del jugador
     local cards = MySQL.query.await([[
         SELECT bc.*, ba.account_name, ba.balance
         FROM bank_cards bc
@@ -95,14 +91,13 @@ local function GetBankData(source)
         ORDER BY bc.created_at DESC
     ]], { identifier })
 
-    -- Obtener efectivo del jugador
     local cash = GetPlayerMoney(source)
 
     return {
         accounts = allAccounts,
         transactions = transactions,
         loans = loans or {},
-        cards = cards or {}, -- Añadir tarjetas
+        cards = cards or {},
         cash = cash,
         maxAccounts = 5
     }

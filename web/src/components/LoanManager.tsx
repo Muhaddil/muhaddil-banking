@@ -4,7 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { Card } from "./ui/Card"
 import { Button } from "./ui/Button"
-import { Plus, AlertCircle, TrendingDown, Calendar, Percent, X } from "lucide-react"
+import { Plus, AlertCircle, TrendingDown, Calendar, Percent, X, CheckCircle } from "lucide-react"
 import { useLocale } from "../hooks/useLocale"
 
 interface Loan {
@@ -100,20 +100,37 @@ export const LoanManager: React.FC<LoanManagerProps> = ({ loans, onRequestLoan, 
                         const paid = totalWithInterest - remaining
                         const progress = (paid / totalWithInterest) * 100
 
+                        const isPaid = loan.status === "paid" || remaining <= 0
+
                         return (
                             <Card key={loan.id} className="relative overflow-hidden hover:scale-[1.01] transition-all duration-300">
-                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[rgb(var(--accent-primary))] to-[rgb(var(--accent-secondary))]" />
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${isPaid
+                                    ? "from-green-400 to-green-600"
+                                    : "from-[rgb(var(--accent-primary))] to-[rgb(var(--accent-secondary))]"
+                                    }`} />
 
                                 <div className="space-y-6 relative z-10">
                                     <div className="flex items-center justify-between flex-wrap gap-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-gradient-to-br from-[rgb(var(--accent-primary))] to-[rgb(var(--accent-secondary))] rounded-lg shadow-lg">
-                                                <TrendingDown className="text-white" size={20} />
+                                            <div className={`p-2 rounded-lg shadow-lg ${isPaid
+                                                ? "bg-gradient-to-br from-green-500 to-green-700"
+                                                : "bg-gradient-to-br from-[rgb(var(--accent-primary))] to-[rgb(var(--accent-secondary))]"
+                                                }`}>
+                                                {isPaid
+                                                    ? <CheckCircle className="text-white" size={20} />
+                                                    : <TrendingDown className="text-white" size={20} />
+                                                }
                                             </div>
                                             <h3 className="text-xl font-bold text-white">{t("loans.loanId", { id: loan.id })}</h3>
-                                            <span className="px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-medium border border-yellow-500/30">
-                                                {t("loans.active")}
-                                            </span>
+                                            {isPaid ? (
+                                                <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-medium border border-green-500/30">
+                                                    {t("loans.paid")}
+                                                </span>
+                                            ) : (
+                                                <span className="px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-medium border border-yellow-500/30">
+                                                    {t("loans.active")}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
 
@@ -168,26 +185,40 @@ export const LoanManager: React.FC<LoanManagerProps> = ({ loans, onRequestLoan, 
                                         <div className="flex justify-between items-end mb-4">
                                             <div>
                                                 <p className="text-[rgb(var(--text-secondary))] text-sm mb-1">{t("loans.remaining")}</p>
-                                                <p className="text-3xl lg:text-4xl font-bold text-white">${remaining.toLocaleString()}</p>
+                                                <p className="text-3xl lg:text-4xl font-bold text-white">
+                                                    ${isPaid ? "0" : remaining.toLocaleString()}
+                                                </p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-2xl font-bold text-[rgb(var(--accent-glow))]">{progress.toFixed(0)}%</p>
+                                                <p className="text-2xl font-bold text-[rgb(var(--accent-glow))]">{isPaid ? "100" : progress.toFixed(0)}%</p>
                                                 <p className="text-xs text-[rgb(var(--text-muted))]">{t("loans.paid")}</p>
                                             </div>
                                         </div>
 
                                         <div className="h-4 bg-[rgb(var(--bg-secondary))] rounded-full overflow-hidden mb-6 shadow-inner">
                                             <div
-                                                className="h-full bg-gradient-to-r from-[rgb(var(--accent-primary))] to-[rgb(var(--accent-secondary))] transition-all duration-500 shadow-lg relative overflow-hidden"
-                                                style={{ width: `${progress}%` }}
+                                                className={`h-full transition-all duration-500 shadow-lg relative overflow-hidden ${isPaid
+                                                    ? "bg-gradient-to-r from-green-500 to-green-400"
+                                                    : "bg-gradient-to-r from-[rgb(var(--accent-primary))] to-[rgb(var(--accent-secondary))]"
+                                                    }`}
+                                                style={{ width: `${isPaid ? 100 : progress}%` }}
                                             >
                                                 <div className="absolute inset-0 bg-white/20 animate-pulse" />
                                             </div>
                                         </div>
 
-                                        <Button onClick={() => handleOpenPaymentModal(loan)} className="w-full shadow-xl">
-                                            {t("loans.payInstallment")}
-                                        </Button>
+                                        {!isPaid && (
+                                            <Button onClick={() => handleOpenPaymentModal(loan)} className="w-full shadow-xl">
+                                                {t("loans.payInstallment")}
+                                            </Button>
+                                        )}
+
+                                        {isPaid && (
+                                            <div className="w-full py-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-center font-medium flex items-center justify-center gap-2">
+                                                <CheckCircle size={16} />
+                                                {t("loans.loanPaidOff") ?? "Préstamo saldado"}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </Card>

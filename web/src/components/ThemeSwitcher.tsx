@@ -27,25 +27,21 @@ export const ThemeSwitcher: React.FC = () => {
         <Palette size={20} className="text-white" />
       </button>
 
-      {/* Overlay */}
       <div
         onClick={() => setIsOpen(false)}
-        className={`fixed inset-0 z-40 transition-opacity duration-200 ${
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
+        className={`fixed inset-0 z-40 transition-opacity duration-200 ${isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
       />
 
-      {/* Dropdown animado */}
       <div
         className={`absolute right-0 top-full mt-2 w-56 
         bg-[rgb(var(--bg-card))] border border-white/10 
         rounded-xl shadow-2xl overflow-hidden z-50
         transform transition-all duration-200 ease-out
-        ${
-          isOpen
+        ${isOpen
             ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
             : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
-        }`}
+          }`}
       >
         <div className="p-3 border-b border-white/5">
           <p className="text-white font-medium text-sm">
@@ -61,11 +57,10 @@ export const ThemeSwitcher: React.FC = () => {
                 setTheme(value)
                 setIsOpen(false)
               }}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
-                theme === value
+              className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${theme === value
                   ? "bg-white/10 border border-white/20"
                   : "hover:bg-white/5"
-              }`}
+                }`}
             >
               <div
                 className="w-8 h-8 rounded-lg shadow-md"

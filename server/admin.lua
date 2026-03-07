@@ -194,19 +194,242 @@ RegisterCommand('bankreset', function(source, args, rawCommand)
     print(string.format("^2[ADMIN] %s reseteó el banco de %s^7", GetPlayerName(source), GetPlayerName(targetId)))
 end, false)
 
--- print("^2[Bank System] Comandos de administrador cargados^7")
--- print("^3Comandos disponibles:^7")
--- print("  ^5/bankadmin^7 - Ver top 50 cuentas")
--- print("  ^5/bankaddmoney [ID] [cantidad]^7 - Añadir dinero")
--- print("  ^5/bankremovemoney [ID] [cantidad]^7 - Remover dinero")
--- print("  ^5/bankloans^7 - Ver préstamos activos")
--- print("  ^5/bankcancelloan [ID]^7 - Cancelar préstamo")
--- print("  ^5/bankinfo [ID]^7 - Ver info de cuenta")
--- print("  ^5/bankreset [ID jugador]^7 - Resetear banco de jugador")
+lib.callback.register('muhaddil_bank:getAdminData', function(source)
+    if not hasPermission(source) then return nil end
+
+    local totalAccounts = MySQL.scalar.await('SELECT COUNT(*) FROM bank_accounts') or 0
+    local totalBalance = MySQL.scalar.await('SELECT COALESCE(SUM(balance), 0) FROM bank_accounts') or 0
+    local activeLoans = MySQL.scalar.await("SELECT COUNT(*) FROM bank_loans WHERE status = 'active'") or 0
+    local totalLoanAmount = MySQL.scalar.await(
+        "SELECT COALESCE(SUM(remaining), 0) FROM bank_loans WHERE status = 'active'") or 0
+    local totalTransactions = MySQL.scalar.await('SELECT COUNT(*) FROM bank_transactions') or 0
+    local totalTransactionVolume = MySQL.scalar.await('SELECT COALESCE(SUM(ABS(amount)), 0) FROM bank_transactions') or 0
+    local totalSavings = MySQL.scalar.await('SELECT COALESCE(SUM(current_amount), 0) FROM bank_savings_accounts') or 0
+    local totalScheduled = MySQL.scalar.await("SELECT COUNT(*) FROM bank_scheduled_transfers WHERE enabled = 1") or 0
+    local pendingRequests = MySQL.scalar.await("SELECT COUNT(*) FROM bank_transfer_requests WHERE status = 'pending'") or
+        0
+
+    local recentTransactions = MySQL.query.await([[
+        SELECT bt.*, ba.account_name, ba.owner
+        FROM bank_transactions bt
+        LEFT JOIN bank_accounts ba ON bt.account_id = ba.id
+        ORDER BY bt.created_at DESC
+        LIMIT 100
+    ]])
+
+    local topAccounts = MySQL.query.await([[
+        SELECT * FROM bank_accounts ORDER BY balance DESC LIMIT 50
+    ]])
+
+    local allLoans = MySQL.query.await([[
+        SELECT * FROM bank_loans WHERE status = 'active' ORDER BY remaining DESC
+    ]])
+
+    local bankOwnerships = MySQL.query.await('SELECT * FROM bank_ownership')
+
+    local allScheduled = MySQL.query.await([[
+        SELECT bst.*,
+            ba_from.account_name as from_account_name,
+            ba_to.account_name as to_account_name
+        FROM bank_scheduled_transfers bst
+        LEFT JOIN bank_accounts ba_from ON bst.from_account_id = ba_from.id
+        LEFT JOIN bank_accounts ba_to ON bst.to_account_id = ba_to.id
+        ORDER BY bst.created_at DESC
+        LIMIT 100
+    ]])
+
+    local allPendingRequests = MySQL.query.await([[
+        SELECT btr.*, ba.account_name as requester_account_name
+        FROM bank_transfer_requests btr
+        LEFT JOIN bank_accounts ba ON btr.requester_account_id = ba.id
+        WHERE btr.status = 'pending'
+        ORDER BY btr.created_at DESC
+    ]])
+
+    return {
+        stats = {
+            totalAccounts = totalAccounts,
+            totalBalance = totalBalance,
+            activeLoans = activeLoans,
+            totalLoanAmount = totalLoanAmount,
+            totalTransactions = totalTransactions,
+            totalTransactionVolume = totalTransactionVolume,
+            totalSavings = totalSavings,
+            totalScheduled = totalScheduled,
+            pendingRequests = pendingRequests,
+        },
+        recentTransactions = recentTransactions or {},
+        topAccounts = topAccounts or {},
+        allLoans = allLoans or {},
+        bankOwnerships = bankOwnerships or {},
+        allScheduled = allScheduled or {},
+        allPendingRequests = allPendingRequests or {},
+    }
+end)
+
+lib.callback.register('muhaddil_bank:adminSearchUser', function(source, searchQuery)
+    if not hasPermission(source) then return nil end
+
+    if not searchQuery or searchQuery == '' then return nil end
+
+    local targetId = tonumber(searchQuery)
+    local targetIdentifier = nil
+
+    if targetId then
+        targetIdentifier = GetPlayerIdentifier(targetId)
+    else
+        targetIdentifier = searchQuery
+    end
+
+    if not targetIdentifier then
+        return { error = 'Jugador no encontrado' }
+    end
+
+    local accounts = MySQL.query.await('SELECT * FROM bank_accounts WHERE owner = ?', { targetIdentifier })
+    local loans = MySQL.query.await('SELECT * FROM bank_loans WHERE user_identifier = ? ORDER BY created_at DESC',
+        { targetIdentifier })
+    local savings = MySQL.query.await([[
+        SELECT bsa.*, ba.account_name
+        FROM bank_savings_accounts bsa
+        INNER JOIN bank_accounts ba ON bsa.account_id = ba.id
+        WHERE bsa.owner = ?
+    ]], { targetIdentifier })
+    local contacts = MySQL.query.await('SELECT * FROM bank_contacts WHERE owner = ?', { targetIdentifier })
+    local scheduled = MySQL.query.await('SELECT * FROM bank_scheduled_transfers WHERE owner = ?', { targetIdentifier })
+    local creditScore = GetPlayerCreditScore(targetIdentifier)
+
+    local transactions = {}
+    for _, acc in ipairs(accounts or {}) do
+        local accTx = MySQL.query.await([[
+            SELECT * FROM bank_transactions
+            WHERE account_id = ?
+            ORDER BY created_at DESC
+            LIMIT 50
+        ]], { acc.id })
+        for _, tx in ipairs(accTx or {}) do
+            tx.account_name = acc.account_name
+            table.insert(transactions, tx)
+        end
+    end
+
+    return {
+        identifier = targetIdentifier,
+        accounts = accounts or {},
+        loans = loans or {},
+        savings = savings or {},
+        contacts = contacts or {},
+        scheduled = scheduled or {},
+        transactions = transactions,
+        creditScore = creditScore,
+    }
+end)
+
+RegisterNetEvent('muhaddil_bank:adminAddMoney', function(accountId, amount)
+    local src = source
+    if not hasPermission(src) then return end
+
+    accountId = tonumber(accountId)
+    amount = tonumber(amount)
+    if not accountId or not amount or amount <= 0 then return end
+
+    MySQL.query.await('UPDATE bank_accounts SET balance = balance + ? WHERE id = ?', { amount, accountId })
+    MySQL.insert.await(
+        'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
+        { accountId, 'admin_deposit', amount, 'Depósito administrativo' }
+    )
+
+    Notify(src, 'success', string.format('$%.2f añadidos a cuenta #%d', amount, accountId))
+    print(string.format("^2[ADMIN] %s añadió $%.2f a cuenta #%d^7", GetPlayerName(src), amount, accountId))
+end)
+
+RegisterNetEvent('muhaddil_bank:adminRemoveMoney', function(accountId, amount)
+    local src = source
+    if not hasPermission(src) then return end
+
+    accountId = tonumber(accountId)
+    amount = tonumber(amount)
+    if not accountId or not amount or amount <= 0 then return end
+
+    MySQL.query.await('UPDATE bank_accounts SET balance = balance - ? WHERE id = ?', { amount, accountId })
+    MySQL.insert.await(
+        'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
+        { accountId, 'admin_withdrawal', -amount, 'Retiro administrativo' }
+    )
+
+    Notify(src, 'success', string.format('$%.2f removidos de cuenta #%d', amount, accountId))
+    print(string.format("^2[ADMIN] %s removió $%.2f de cuenta #%d^7", GetPlayerName(src), amount, accountId))
+end)
+
+RegisterNetEvent('muhaddil_bank:adminCancelLoan', function(loanId)
+    local src = source
+    if not hasPermission(src) then return end
+
+    loanId = tonumber(loanId)
+    if not loanId then return end
+
+    MySQL.query.await('UPDATE bank_loans SET status = "cancelled", remaining = 0 WHERE id = ?', { loanId })
+
+    Notify(src, 'success', string.format('Préstamo #%d cancelado', loanId))
+    print(string.format("^2[ADMIN] %s canceló préstamo #%d^7", GetPlayerName(src), loanId))
+end)
+
+RegisterNetEvent('muhaddil_bank:adminFreezeAccount', function(accountId)
+    local src = source
+    if not hasPermission(src) then return end
+
+    accountId = tonumber(accountId)
+    if not accountId then return end
+
+    local balance = MySQL.scalar.await('SELECT balance FROM bank_accounts WHERE id = ?', { accountId })
+    if balance then
+        MySQL.query.await('UPDATE bank_accounts SET balance = 0 WHERE id = ?', { accountId })
+        MySQL.insert.await(
+            'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
+            { accountId, 'admin_freeze', -tonumber(balance), 'Cuenta congelada por administrador' }
+        )
+        Notify(src, 'success', string.format('Cuenta #%d congelada', accountId))
+        print(string.format("^2[ADMIN] %s congeló cuenta #%d^7", GetPlayerName(src), accountId))
+    end
+end)
+
+RegisterNetEvent('muhaddil_bank:adminDeleteScheduled', function(transferId)
+    local src = source
+    if not hasPermission(src) then return end
+
+    transferId = tonumber(transferId)
+    if not transferId then return end
+
+    MySQL.query.await('DELETE FROM bank_scheduled_transfers WHERE id = ?', { transferId })
+    Notify(src, 'success', string.format('Transferencia programada #%d eliminada', transferId))
+end)
+
+RegisterNetEvent('muhaddil_bank:adminCancelRequest', function(requestId)
+    local src = source
+    if not hasPermission(src) then return end
+
+    requestId = tonumber(requestId)
+    if not requestId then return end
+
+    MySQL.query.await(
+        "UPDATE bank_transfer_requests SET status = 'cancelled', resolved_at = NOW() WHERE id = ?",
+        { requestId }
+    )
+    Notify(src, 'success', string.format('Solicitud #%d cancelada', requestId))
+end)
+
+if Config.AdminPanel and Config.AdminPanel.Enabled then
+    RegisterCommand(Config.AdminPanel.Command, function(source, args, rawCommand)
+        if source == 0 then return end
+        if not hasPermission(source) then
+            TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.no_permissions'))
+            return
+        end
+        TriggerClientEvent('muhaddil_bank:openAdminPanel', source)
+    end, false)
+end
 
 exports('GetTopAccounts', function(limit)
     limit = tonumber(limit) or 50
-
     return MySQL.query.await(
         'SELECT * FROM bank_accounts ORDER BY balance DESC LIMIT ?',
         { limit }
@@ -311,3 +534,5 @@ exports('ResetPlayerBank', function(identifier)
 
     return true
 end)
+
+print('^2[Bank System] Admin system loaded^7')
