@@ -202,7 +202,7 @@ if Config.Savings.Enabled then
 
         local processed = 0
         for _, s in ipairs(savings) do
-            local interest = math.floor(tonumber(s.current_amount) * (tonumber(s.interest_rate) / 100))
+            local interest = math.floor((tonumber(s.current_amount) * (tonumber(s.interest_rate) / 100)) + 0.5)
             if interest > 0 then
                 MySQL.query.await(
                     'UPDATE bank_savings_accounts SET current_amount = current_amount + ?, last_interest_date = NOW() WHERE id = ?',

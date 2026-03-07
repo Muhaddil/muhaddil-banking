@@ -142,7 +142,8 @@ MySQL.ready(function()
                 `contact_account_id` INT NOT NULL,
                 `notes` TEXT DEFAULT NULL,
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX(`owner`)
+                INDEX(`owner`),
+                FOREIGN KEY (`contact_account_id`) REFERENCES `bank_accounts`(`id`) ON DELETE CASCADE
             )
         ]],
         [[
