@@ -105,6 +105,7 @@ CREATE TABLE
         `notes` TEXT DEFAULT NULL,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX (`owner`),
+        INDEX (`contact_account_id`),
         FOREIGN KEY (`contact_account_id`) REFERENCES `bank_accounts` (`id`) ON DELETE CASCADE
     ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
