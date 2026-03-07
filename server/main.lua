@@ -625,14 +625,16 @@ local function processLoanPayments()
                     { penalty, loan.id }
                 )
 
-                MySQL.insert.await([[
-                    INSERT INTO bank_transactions (account_id, type, amount, description)
-                    VALUES (?, 'loan_penalty', ?, ?)
-                ]], {
-                    account and account.id or 0,
-                    penalty,
-                    'Penalización por impago - Préstamo #' .. loan.id
-                })
+                if account then
+                    MySQL.insert.await([[
+                        INSERT INTO bank_transactions (account_id, type, amount, description)
+                        VALUES (?, 'loan_penalty', ?, ?)
+                    ]], {
+                        account.id,
+                        penalty,
+                        'Penalización por impago - Préstamo #' .. loan.id
+                    })
+                end
 
                 local playerData = GetPlayerFromIdentifier(loan.user_identifier)
                 local playerId   = playerData and playerData.source or nil
