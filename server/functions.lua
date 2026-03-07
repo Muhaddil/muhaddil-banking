@@ -169,6 +169,14 @@ function GetPlayer(source)
     end
 end
 
+function GetPlayerFromIdentifier(identifier)
+    if FrameWork == 'esx' then
+        return ESX.GetPlayerFromIdentifier(identifier)
+    elseif FrameWork == 'qb' then
+        return QBCore.Functions.GetPlayer(identifier)
+    end
+end
+
 function AddPlayerBankMoney(source, amount)
     if FrameWork == 'esx' then
         local xPlayer = GetPlayer(source)
@@ -340,6 +348,27 @@ function IsPlayerAtHisBank(src, bankId)
     local distance = #(playerCoords - bankCoords)
 
     return distance <= 3.5
+end
+
+function buildCronExpression(intervalHours)
+    if intervalHours == 1 then
+        return '0 * * * *'
+    elseif intervalHours == 24 then
+        return '0 0 * * *'
+    elseif intervalHours < 24 and (24 % intervalHours == 0) then
+        return string.format('0 */%d * * *', intervalHours)
+    elseif intervalHours == 48 then
+        return '0 0 */2 * *'
+    elseif intervalHours == 168 then
+        return '0 0 * * 1'
+    else
+        local hours = intervalHours % 24
+        if hours == 0 then
+            local days = math.floor(intervalHours / 24)
+            return string.format('0 0 */%d * *', days)
+        end
+        return string.format('0 */%d * * *', intervalHours)
+    end
 end
 
 -- exports('GetPlayer', GetPlayer)

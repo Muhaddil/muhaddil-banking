@@ -207,13 +207,14 @@ AddEventHandler('onResourceStop', function(resourceName)
     end
 end)
 
-RegisterNetEvent('muhaddil_bank:notify', function(type, message)
-    lib.notify({ type = type, description = message })
+RegisterNetEvent('muhaddil_bank:notify', function(type, message, time)
+    lib.notify({ type = type, description = message, duration = time or 5000 })
 
     SendNUIMessage({
         action = 'notify',
         type = type,
-        message = message
+        message = message,
+        duration = time or 5000
     })
 end)
 

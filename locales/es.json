@@ -353,7 +353,10 @@
     "no_permissions": "No tienes permisos",
     "deposit_limit": "Límite de depósito: ${0}",
     "atm_transfer_out": "Transferencia ATM",
-    "atm_transfer_in": "Transferencia ATM"
+    "atm_transfer_in": "Transferencia ATM",
+    "auto_payment_done": "Pago automático: ${0} descontado. Restante: ${1}",
+    "loan_paid_off": "Tu préstamo #${0} ha sido completamente pagado.",
+    "loan_payment_failed": "Sin fondos para pago automático del préstamo #${0}. Penalización aplicada: +${1}"
   },
   "client": {
     "bank_connection_error": "Error al conectar con el banco",

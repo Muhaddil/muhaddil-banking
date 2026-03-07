@@ -545,6 +545,131 @@ RegisterCommand(Config.OpenCommand, function(source, args, rawCommand)
     TriggerClientEvent('muhaddil_bank:openBank', source)
 end, false)
 
+local function processLoanPayments()
+    print('^3[Bank System] Running automatic loan payments...^7')
+
+    local activeLoans = MySQL.query.await([[
+        SELECT * FROM bank_loans
+        WHERE status = 'active'
+    ]])
+
+    if not activeLoans or #activeLoans == 0 then
+        print('^3[Bank System] No active loans found.^7')
+        return
+    end
+
+    local paid, failed, completed = 0, 0, 0
+
+    for _, loan in ipairs(activeLoans) do
+        local installmentAmount = math.ceil(loan.amount / loan.installments)
+        local remaining         = tonumber(loan.remaining) or 0
+
+        if installmentAmount > remaining then
+            installmentAmount = math.ceil(remaining)
+        end
+
+        local account = MySQL.single.await([[
+            SELECT * FROM bank_accounts
+            WHERE owner = ?
+            ORDER BY balance DESC
+            LIMIT 1
+        ]], { loan.user_identifier })
+
+        if account and tonumber(account.balance) >= installmentAmount then
+            MySQL.query.await(
+                'UPDATE bank_accounts SET balance = balance - ? WHERE id = ?',
+                { installmentAmount, account.id }
+            )
+
+            local newRemaining = remaining - installmentAmount
+            local status       = (newRemaining <= 0) and 'paid' or 'active'
+
+            MySQL.query.await(
+                'UPDATE bank_loans SET remaining = ?, status = ? WHERE id = ?',
+                { newRemaining, status, loan.id }
+            )
+
+            MySQL.insert.await([[
+                INSERT INTO bank_transactions (account_id, type, amount, description)
+                VALUES (?, 'loan_payment', ?, ?)
+            ]], {
+                account.id,
+                -installmentAmount,
+                'Pago automático de préstamo #' .. loan.id
+            })
+
+            local playerData = GetPlayerFromIdentifier(loan.user_identifier)
+            local playerId   = playerData and playerData.source or nil
+
+            if playerId then
+                if status == 'paid' then
+                    Notify(playerId, 'success',
+                        Locale('server.loan_paid_off', loan.id) or
+                        '✅ Tu préstamo #' .. loan.id .. ' ha sido completamente pagado.')
+                    completed = completed + 1
+                else
+                    Notify(playerId, 'info',
+                        Locale('server.auto_payment_done', installmentAmount, newRemaining) or
+                        '💳 Pago automático: $' .. installmentAmount .. ' descontado. Restante: $' .. newRemaining)
+                end
+                TriggerClientEvent('muhaddil_bank:refreshData', playerId)
+            end
+
+            paid = paid + 1
+        else
+            if Config.Loans.AutoPayment.PenaltyOnMiss and Config.Loans.AutoPayment.PenaltyRate then
+                local penalty = math.ceil(remaining * (Config.Loans.AutoPayment.PenaltyRate / 100))
+
+                MySQL.query.await(
+                    'UPDATE bank_loans SET remaining = remaining + ? WHERE id = ?',
+                    { penalty, loan.id }
+                )
+
+                MySQL.insert.await([[
+                    INSERT INTO bank_transactions (account_id, type, amount, description)
+                    VALUES (?, 'loan_penalty', ?, ?)
+                ]], {
+                    account and account.id or 0,
+                    penalty,
+                    'Penalización por impago - Préstamo #' .. loan.id
+                })
+
+                local playerData = GetPlayerFromIdentifier(loan.user_identifier)
+                local playerId   = playerData and playerData.source or nil
+
+                if playerId then
+                    Notify(playerId, 'error',
+                        Locale('server.loan_payment_failed', loan.id, penalty) or
+                        '⚠️ Sin fondos para pago automático del préstamo #' ..
+                        loan.id .. '. Penalización aplicada: +$' .. penalty)
+                    TriggerClientEvent('muhaddil_bank:refreshData', playerId)
+                end
+            end
+
+            failed = failed + 1
+        end
+    end
+
+    print(string.format(
+        '^2[Bank System] Auto-payments done. Paid: %d | Completed: %d | Failed (no funds): %d^7',
+        paid, completed, failed
+    ))
+end
+
+if Config.Loans.AutoPayment.Enabled then
+    Wait(10000)
+    local cronExpr = buildCronExpression(Config.Loans.AutoPayment.IntervalHours)
+
+    print(string.format(
+        '^3[Bank System] Registering auto-loan cron with expression: "%s" (every %dh)^7',
+        cronExpr, Config.Loans.AutoPayment.IntervalHours
+    ))
+
+    lib.cron.new(cronExpr, function(task, date)
+        processLoanPayments()
+    end, { debug = false })
+end
+
 exports('Transfer', function(source, fromAccountId, toAccountId, amount, bankLocation)
     local src = source
     local identifier = GetPlayerIdentifier(src)

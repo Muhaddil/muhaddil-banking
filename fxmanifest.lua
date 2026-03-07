@@ -4,7 +4,7 @@ lua54 'yes'
 
 author 'Muhaddil'
 description 'Banking System'
-version 'v0.0.2-beta'
+version 'v0.0.3-beta'
 
 ui_page 'web/build/index.html'
 
