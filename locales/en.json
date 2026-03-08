@@ -406,7 +406,13 @@
     "contact_updated": "Contact updated successfully",
     "contact_deleted": "Contact deleted successfully",
 
-    "admin_insufficient_perms": "Insufficient permissions"
+    "admin_insufficient_perms": "Insufficient permissions",
+
+    "solicitation_paid_phone": "Your solicitation of ${0} has been paid",
+    "scheduled_failed_funds_phone": "Scheduled transfer of ${0} failed (No funds)",
+    "scheduled_executed_phone": "Scheduled transfer of ${0} executed",
+    "scheduled_received_phone": "You received ${0} from a scheduled transfer",
+    "transfer_received_phone": "You received ${0} from a transfer"
   },
   "client": {
     "bank_connection_error": "Error connecting to bank",

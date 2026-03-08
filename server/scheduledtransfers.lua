@@ -249,6 +249,8 @@ if Config.ScheduledTransfers.Enabled then
                             Locale('server.scheduled_executed', amount))
                         TriggerEvent('muhaddil_bank:afterTransfer', playerData.source)
                         TriggerClientEvent('muhaddil_bank:refreshData', playerData.source)
+                        TriggerClientEvent('muhaddil_bank:phone:notify', playerData.source,
+                            Locale('server.scheduled_executed_phone', amount), 'info')
                     end
 
                     local toAccount = MySQL.single.await('SELECT owner FROM bank_accounts WHERE id = ?',
@@ -258,6 +260,8 @@ if Config.ScheduledTransfers.Enabled then
                         if targetData and targetData.source then
                             TriggerEvent('muhaddil_bank:afterTransfer', targetData.source)
                             TriggerClientEvent('muhaddil_bank:refreshData', targetData.source)
+                            TriggerClientEvent('muhaddil_bank:phone:notify', targetData.source,
+                                Locale('server.scheduled_received_phone', amount), 'success')
                         end
                     end
                 else
@@ -270,6 +274,8 @@ if Config.ScheduledTransfers.Enabled then
                 if playerData and playerData.source then
                     Notify(playerData.source, 'error',
                         Locale('server.scheduled_failed_funds'))
+                    TriggerClientEvent('muhaddil_bank:phone:notify', playerData.source,
+                        Locale('server.scheduled_failed_funds_phone', amount), 'error')
                 end
 
                 local nextExec = CalculateNextExecution(

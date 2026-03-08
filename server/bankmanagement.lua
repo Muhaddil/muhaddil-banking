@@ -233,8 +233,8 @@ RegisterNetEvent('muhaddil_bank:withdrawEarnings', function(bankId)
     Notify(src, 'success', Locale('server.earnings_withdrawn', earnings))
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 
-    print(string.format("^2[Bank System] %s retiró $%s de %s^7",
-        GetPlayerName(src), earnings, bank.bank_name))
+    -- print(string.format("^2[Bank System] %s retiró $%s de %s^7",
+    --     GetPlayerName(src), earnings, bank.bank_name))
 end)
 
 RegisterNetEvent('muhaddil_bank:renameBank', function(bankId, newName)

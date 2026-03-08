@@ -398,8 +398,6 @@ end)
 RegisterNetEvent('muhaddil_bank:transfer', function(data)
     local src = source
 
-    print('Triggered transfer event')
-
     local success = exports['muhaddil-banking']:Transfer(
         src,
         data.fromAccountId,
@@ -801,10 +799,10 @@ exports('Transfer', function(source, fromAccountId, toAccountId, amount, bankLoc
     local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
 
-    fromAccountId = tonumber(fromAccountId)
-    toAccountId   = tonumber(toAccountId)
-    amount        = tonumber(amount)
-    print(amount)
+    fromAccountId      = tonumber(fromAccountId)
+    toAccountId        = tonumber(toAccountId)
+    amount             = tonumber(amount)
+
     local bankLocation = bankLocation
 
     if not fromAccountId or not toAccountId then
@@ -870,6 +868,8 @@ exports('Transfer', function(source, fromAccountId, toAccountId, amount, bankLoc
         if targetData and targetData.source then
             TriggerEvent('muhaddil_bank:afterTransfer', targetData.source)
             TriggerClientEvent('muhaddil_bank:refreshData', targetData.source)
+            TriggerClientEvent('muhaddil_bank:phone:notify', targetData.source,
+                Locale('server.transfer_received_phone', amount), 'success')
         end
     end
 

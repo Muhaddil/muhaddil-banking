@@ -141,7 +141,6 @@ RegisterNetEvent('muhaddil_bank:phone:createAccount', function(data)
 end)
 
 RegisterNetEvent('muhaddil_bank:phone:transfer', function(data)
-    print('Triggered transfer event')
     local src = source
 
     local ok = exports['muhaddil-banking']:Transfer(

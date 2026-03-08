@@ -154,6 +154,8 @@ RegisterNetEvent('muhaddil_bank:acceptTransferRequest', function(data)
             Notify(requesterId, 'success', Locale('server.request_was_accepted', amount))
             TriggerEvent('muhaddil_bank:afterTransfer', requesterId)
             TriggerClientEvent('muhaddil_bank:refreshData', requesterId)
+            TriggerClientEvent('muhaddil_bank:phone:notify', requesterId,
+                Locale('server.solicitation_paid_phone', amount), 'success')
         end
     end
 end)

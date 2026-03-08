@@ -404,7 +404,13 @@
     "contact_updated": "Contacto actualizado con éxito",
     "contact_deleted": "Contacto eliminado con éxito",
 
-    "admin_insufficient_perms": "Permisos insuficientes"
+    "admin_insufficient_perms": "Permisos insuficientes",
+
+    "solicitation_paid_phone": "Tu solicitud de ${0} ha sido pagada",
+    "scheduled_failed_funds_phone": "Fallo transferencia programada de ${0} (Sin fondos)",
+    "scheduled_executed_phone": "Transferencia programada de ${0} ejecutada",
+    "scheduled_received_phone": "Has recibido ${0} de una transferencia programada",
+    "transfer_received_phone": "Has recibido ${0} de una transferencia"
   },
   "client": {
     "bank_connection_error": "Error al conectar con el banco",
