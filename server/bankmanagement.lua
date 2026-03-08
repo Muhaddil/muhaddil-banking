@@ -110,7 +110,7 @@ RegisterNetEvent('muhaddil_bank:transferBank', function(bankId, targetPlayerId)
     if not IsPlayerAtHisBank(src, bankId) then
         -- print(("[BANK-EXPLOIT] %s intentó retirar %s sin estar en el banco")
         --     :format(GetPlayerName(src), bankId))
-        return Notify(src, 'error', 'Debes estar dentro de tu banco para retirar las ganancias')
+        return Notify(src, 'error', Locale('server.must_be_at_bank_to_transfer'))
     end
 
     targetPlayerId = tonumber(targetPlayerId)
@@ -167,7 +167,7 @@ RegisterNetEvent('muhaddil_bank:updateCommission', function(bankId, newRate)
     if not IsPlayerAtHisBank(src, bankId) then
         -- print(("[BANK-EXPLOIT] %s intentó retirar %s sin estar en el banco")
         --     :format(GetPlayerName(src), bankId))
-        return Notify(src, 'error', 'Debes estar dentro de tu banco para retirar las ganancias')
+        return Notify(src, 'error', Locale('server.must_be_at_bank_to_update_commission'))
     end
 
     newRate = tonumber(newRate)
@@ -206,7 +206,7 @@ RegisterNetEvent('muhaddil_bank:withdrawEarnings', function(bankId)
     if not IsPlayerAtHisBank(src, bankId) then
         -- print(("[BANK-EXPLOIT] %s intentó retirar %s sin estar en el banco")
         --     :format(GetPlayerName(src), bankId))
-        return Notify(src, 'error', 'Debes estar dentro de tu banco para retirar las ganancias')
+        return Notify(src, 'error', Locale('server.must_be_at_bank_to_withdraw_earnings'))
     end
 
     local bank = MySQL.single.await(

@@ -132,6 +132,7 @@ Config.BankOwnership = {
     PurchasePrice = 1000000, -- Price to purchase a bank
     SellPercentage = 0.50,   -- 50% of the purchase price
     MaxBanksPerPlayer = 3,   -- Max banks per player
+    InteractionRadius = 3.5, -- Radius to interact with the bank (for antiexploit purposes)
 
     -- Commission Settings
     DefaultCommissionRate = 0.01, -- 1%

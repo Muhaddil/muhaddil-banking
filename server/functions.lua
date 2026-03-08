@@ -2,6 +2,9 @@ local ESX = nil
 local QBCore = nil
 local ESXVer = Config.ESXVer
 local FrameWork = nil
+local bankCoordsCache = {}
+local cacheDirty = true
+local BANK_INTERACTION_RADIUS = Config.BankOwnership.InteractionRadius
 
 if Config.FrameWork == "auto" then
     if GetResourceState('es_extended') == 'started' then
@@ -417,31 +420,73 @@ function GenerateCardNumber()
     return cardNum
 end
 
-function GetBankCoords(bankId)
+function BuildBankCache()
+    if not cacheDirty then return end
+    bankCoordsCache = {}
     for _, bank in ipairs(Config.BankLocations) do
-        if bank.id == bankId then
-            return bank.coords
+        if bank.id ~= nil then
+            bankCoordsCache[bank.id] = bank.coords
         end
     end
-    return nil
+    cacheDirty = false
 end
 
+function InvalidateBankCache()
+    cacheDirty = true
+end
+
+---@param bankId any
+---@return vector3|nil, string|nil
+function GetBankCoords(bankId)
+    if bankId == nil then
+        return nil, "bankId es nil"
+    end
+
+    BuildBankCache()
+
+    local coords = bankCoordsCache[bankId]
+    if not coords then
+        return nil, ("bankId '%s' no encontrado"):format(tostring(bankId))
+    end
+
+    return coords, nil
+end
+
+---@param src number
+---@param bankId any
+---@return boolean, string|nil
 function IsPlayerAtHisBank(src, bankId)
-    local bankCoords = GetBankCoords(bankId)
+    if type(src) ~= "number" or src <= 0 then
+        return false, "src inválido: " .. tostring(src)
+    end
+
+    local bankCoords, err = GetBankCoords(bankId)
     if not bankCoords then
-        print("^1[Bank] bankId inválido:", bankId, "^7")
-        return false
+        print(("^1[Bank] GetBankCoords falló — %s^7"):format(err))
+        return false, err
+    end
+
+    if not GetPlayerPing(src) then
+        return false, "jugador no conectado"
     end
 
     local ped = GetPlayerPed(src)
-    if not ped or not DoesEntityExist(ped) then
-        return false
+    if not ped or ped == 0 or not DoesEntityExist(ped) then
+        return false, "ped inválido"
     end
 
     local playerCoords = GetEntityCoords(ped)
-    local distance = #(playerCoords - bankCoords)
 
-    return distance <= 3.5
+    local dx = playerCoords.x - bankCoords.x
+    local dy = playerCoords.y - bankCoords.y
+    local dz = playerCoords.z - bankCoords.z
+    local distSq = dx*dx + dy*dy + dz*dz
+
+    if distSq <= (BANK_INTERACTION_RADIUS * BANK_INTERACTION_RADIUS) then
+        return true, nil
+    end
+
+    return false, ("demasiado lejos (%.1f m)"):format(math.sqrt(distSq))
 end
 
 function buildCronExpression(intervalHours)

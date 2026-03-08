@@ -412,7 +412,11 @@
     "scheduled_failed_funds_phone": "Scheduled transfer of ${0} failed (No funds)",
     "scheduled_executed_phone": "Scheduled transfer of ${0} executed",
     "scheduled_received_phone": "You received ${0} from a scheduled transfer",
-    "transfer_received_phone": "You received ${0} from a transfer"
+    "transfer_received_phone": "You received ${0} from a transfer",
+
+    "must_be_at_bank_to_transfer": "You must be inside your bank to transfer",
+    "must_be_at_bank_to_update_commission": "You must be inside your bank to update the commission",
+    "must_be_at_bank_to_withdraw_earnings": "You must be inside your bank to withdraw earnings"
   },
   "client": {
     "bank_connection_error": "Error connecting to bank",
