@@ -41,7 +41,8 @@ RegisterNetEvent('esx:playerLoaded', function(xPlayer, skin)
 end)
 
 AddEventHandler("onResourceStart", function(resource)
-    if resource == "lb-phone" then
+    if resource == "lb-phone" or resource == GetCurrentResourceName() then
+        Wait(10000)
         addApp()
     end
 end)

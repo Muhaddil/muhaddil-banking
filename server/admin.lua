@@ -30,11 +30,12 @@ RegisterCommand('bankaddmoney', function(source, args, rawCommand)
         return
     end
 
-    local affectedRows = MySQL.query.await('UPDATE bank_accounts SET balance = balance + ? WHERE id = ?', {
+    local result = MySQL.query.await('UPDATE bank_accounts SET balance = balance + ? WHERE id = ?', {
         amount, accountId
     })
 
-    if affectedRows > 0 then
+    local affectedRows = type(result) == 'table' and result.affectedRows or result
+    if affectedRows and affectedRows > 0 then
         MySQL.insert.await('INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)', {
             accountId, 'admin_deposit', amount, 'Depósito administrativo'
         })
