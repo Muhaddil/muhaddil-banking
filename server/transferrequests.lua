@@ -222,7 +222,7 @@ end)
 if Config.TransferRequests.Enabled then
     Wait(15000)
     lib.cron.new('0 * * * *', function()
-        local expired = MySQL.query.await([[
+        local expired = MySQL.update.await([[
             UPDATE bank_transfer_requests
             SET status = 'expired', resolved_at = NOW()
             WHERE status = 'pending' AND created_at < DATE_SUB(NOW(), INTERVAL ? HOUR)
