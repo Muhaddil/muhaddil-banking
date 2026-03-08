@@ -864,6 +864,15 @@ exports('Transfer', function(source, fromAccountId, toAccountId, amount, bankLoc
     Notify(src, 'success', Locale('server.transfer_completed'))
     TriggerEvent('muhaddil_bank:afterTransfer', src)
 
+    local toAccountOwner = MySQL.scalar.await('SELECT owner FROM bank_accounts WHERE id = ?', { toAccountId })
+    if toAccountOwner then
+        local targetData = GetPlayerFromIdentifier(toAccountOwner)
+        if targetData and targetData.source then
+            TriggerEvent('muhaddil_bank:afterTransfer', targetData.source)
+            TriggerClientEvent('muhaddil_bank:refreshData', targetData.source)
+        end
+    end
+
     return true
 end)
 

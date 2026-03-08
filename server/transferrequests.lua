@@ -144,6 +144,7 @@ RegisterNetEvent('muhaddil_bank:acceptTransferRequest', function(data)
     end
 
     Notify(src, 'success', Locale('server.request_accepted'))
+    TriggerEvent('muhaddil_bank:afterTransfer', src)
     TriggerClientEvent('muhaddil_bank:refreshData', src)
 
     local requesterData = GetPlayerFromIdentifier(request.requester_identifier)
@@ -151,6 +152,7 @@ RegisterNetEvent('muhaddil_bank:acceptTransferRequest', function(data)
         local requesterId = requesterData.source
         if requesterId then
             Notify(requesterId, 'success', Locale('server.request_was_accepted', amount))
+            TriggerEvent('muhaddil_bank:afterTransfer', requesterId)
             TriggerClientEvent('muhaddil_bank:refreshData', requesterId)
         end
     end

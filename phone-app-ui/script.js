@@ -376,7 +376,7 @@ if (window.fetchNui) {
 }
 
 window.addEventListener("message", (e) => {
-    const msg = e.data?.data
+    const msg = e.data?.data || e.data
     if (!msg) return
 
     if (msg.type === "updateData") {

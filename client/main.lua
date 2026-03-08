@@ -435,6 +435,16 @@ RegisterNetEvent('muhaddil_bank:refreshData', function()
         commissionRate = commissionRate,
         bankManagementEnabled = bankManagementEnabled
     })
+
+    if not Config.DisablePhoneApp and GetResourceState("lb-phone") == "started" then
+        local bankData = lib.callback.await('muhaddil_bank:phone:getData', false)
+        if bankData then
+            exports["lb-phone"]:SendCustomAppMessage('muhaddil_bank', {
+                type = "updateData",
+                data = bankData
+            })
+        end
+    end
 end)
 
 RegisterNetEvent('muhaddil_bank:openBank', function()

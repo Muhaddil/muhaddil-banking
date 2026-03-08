@@ -247,7 +247,18 @@ if Config.ScheduledTransfers.Enabled then
                     if playerData and playerData.source then
                         Notify(playerData.source, 'info',
                             Locale('server.scheduled_executed', amount))
+                        TriggerEvent('muhaddil_bank:afterTransfer', playerData.source)
                         TriggerClientEvent('muhaddil_bank:refreshData', playerData.source)
+                    end
+
+                    local toAccount = MySQL.single.await('SELECT owner FROM bank_accounts WHERE id = ?',
+                        { transfer.to_account_id })
+                    if toAccount and toAccount.owner then
+                        local targetData = GetPlayerFromIdentifier(toAccount.owner)
+                        if targetData and targetData.source then
+                            TriggerEvent('muhaddil_bank:afterTransfer', targetData.source)
+                            TriggerClientEvent('muhaddil_bank:refreshData', targetData.source)
+                        end
                     end
                 else
                     failed = failed + 1

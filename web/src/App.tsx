@@ -677,7 +677,9 @@ const App = () => {
         groupedByDate[date] = { date, income: 0, expense: 0 }
       }
 
-      const amount = Math.abs(parseFloat(transaction.amount))
+      const parsedAmount = parseFloat(transaction.amount)
+      const amount = Math.abs(parsedAmount)
+
       if (transaction.type === "deposit") {
         groupedByDate[date].income += amount
       } else {
