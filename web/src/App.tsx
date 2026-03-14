@@ -1,10 +1,9 @@
 "use client"
 
-import React, { useState, useCallback, useEffect } from "react"
+import React, { useState, useCallback, useEffect, Suspense, lazy } from "react"
 import { fetchNui } from "./utils/fetchNui"
 import { useNuiEvent } from "./hooks/useNuiEvent"
-import { Toaster } from "react-hot-toast"
-import toast from "react-hot-toast"
+import toast, { Toaster } from "react-hot-toast"
 import { ThemeProvider } from "./contexts/ThemeContext"
 import { LocaleProvider } from "./contexts/LocaleContext"
 import { QuickActions } from "./components/QuickActions"
@@ -16,7 +15,7 @@ import { Dashboard } from "./components/Dashboard"
 import { TransactionHistory } from "./components/TransactionHistory"
 import { LoanManager } from "./components/LoanManager"
 import { BankManager } from "./components/BankManager"
-import { StatsView } from "./components/StatsView"
+const StatsView = lazy(() => import("./components/StatsView"))
 import { AtmInterface } from "./components/AtmInterface"
 import { CardManager } from "./components/CardManager"
 import { SavingsManager } from "./components/SavingsManager"
@@ -288,15 +287,26 @@ const AppContent: React.FC<AppContentProps> = ({
               />
             )}
 
-            {activeTab === "stats" && selectedAccount && (
-              <StatsView
-                data={getChartData()}
-                totalIncome={getTotalIncome()}
-                totalExpense={getTotalExpense()}
-                currentBalance={parseFloat(selectedAccount?.balance ?? "0")}
-              />
+            {activeTab === "stats" && (
+              <Suspense fallback={<div className="text-white">Loading stats...</div>}>
+                {selectedAccount ? (
+                  <StatsView
+                    data={getChartData()}
+                    totalIncome={getTotalIncome()}
+                    totalExpense={getTotalExpense()}
+                    currentBalance={parseFloat(selectedAccount?.balance ?? "0")}
+                  />
+                ) : (
+                  <StatsView
+                    data={[]}
+                    totalIncome={0}
+                    totalExpense={0}
+                    currentBalance={0}
+                  />
+                )}
+              </Suspense>
             )}
-
+            
             {activeTab === "cards" && <CardManager accounts={data.accounts} />}
 
             {activeTab === "banks" && <BankManager ownedBanks={data.ownedBanks} availableBanks={data.availableBanks} />}

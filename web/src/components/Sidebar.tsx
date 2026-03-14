@@ -69,7 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onClo
                         <button
                             key={item.id}
                             onClick={() => setActiveTab(item.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 group ${activeTab === item.id
+                            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-50 group ${activeTab === item.id
                                 ? "bg-gradient-to-r from-[rgba(var(--accent-primary),0.2)] to-[rgba(var(--accent-secondary),0.2)] text-white border border-[rgba(var(--accent-primary),0.3)] shadow-lg shadow-[rgba(var(--accent-glow),0.1)]"
                                 : "text-[rgb(var(--text-secondary))] hover:bg-white/5 hover:text-white"
                                 }`}

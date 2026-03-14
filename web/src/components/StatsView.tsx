@@ -14,7 +14,7 @@ interface StatsViewProps {
     hasAccount?: boolean
 }
 
-export const StatsView: React.FC<StatsViewProps> = ({ data, totalIncome, totalExpense, currentBalance, hasAccount }) => {
+const StatsView: React.FC<StatsViewProps> = ({ data, totalIncome, totalExpense, currentBalance, hasAccount }) => {
     const { t } = useLocale()
     const netFlow = totalIncome - totalExpense
     const isPositive = netFlow >= 0
@@ -22,7 +22,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ data, totalIncome, totalEx
     const hasTransactions = data.length > 0
     const hasFinancialActivity = totalIncome > 0 || totalExpense > 0
 
-    if ((!hasTransactions && !hasFinancialActivity)) {
+    if (!hasTransactions && !hasFinancialActivity) {
         return (
             <div className="space-y-6 animate-in">
                 <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 p-12 md:p-16 shadow-2xl">
@@ -195,3 +195,5 @@ export const StatsView: React.FC<StatsViewProps> = ({ data, totalIncome, totalEx
         </div>
     )
 }
+
+export default StatsView
