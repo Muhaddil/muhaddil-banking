@@ -29,6 +29,8 @@
     "personalAccount": "Personal Account",
     "newAccount": "New Account",
     "maxAccountsReached": "You have reached the limit of {max} accounts",
+    "loading_bank": "Loading bank...",
+    "loading_bank_subtitle": "Please wait",
     "bankInfo": {
       "associated": "Associated Bank",
       "commission": "Commission Rate",
@@ -126,6 +128,13 @@
       "withdraw": "Withdraw funds",
       "transfer": "Transfer money"
     }
+  },
+  "themes": {
+    "dark": "Dark",
+    "red": "Red",
+    "blue": "Blue",
+    "green": "Green",
+    "purple": "Purple"
   },
   "banks": {
     "bankManagement": "Bank Management",

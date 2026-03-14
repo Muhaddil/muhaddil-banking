@@ -4,17 +4,19 @@ import type React from "react"
 import { useState } from "react"
 import { Palette, Check } from "lucide-react"
 import { useTheme, type Theme } from "../contexts/ThemeContext"
+import { useLocale } from "../hooks/useLocale"
 
 export const ThemeSwitcher: React.FC = () => {
   const { theme, setTheme } = useTheme()
   const [isOpen, setIsOpen] = useState(false)
+  const { t } = useLocale()
 
   const themes: { value: Theme; label: string; gradient: string }[] = [
-    { value: "dark", label: "Oscuro", gradient: "linear-gradient(to bottom right, #475569, #1f2937)" },
-    { value: "red", label: "Rojo", gradient: "linear-gradient(to bottom right, #ef4444, #e11d48)" },
-    { value: "blue", label: "Azul", gradient: "linear-gradient(to bottom right, #3b82f6, #4f46e5)" },
-    { value: "green", label: "Verde", gradient: "linear-gradient(to bottom right, #10b981, #0d9488)" },
-    { value: "purple", label: "Púrpura", gradient: "linear-gradient(to bottom right, #8b5cf6, #ec4899)" },
+    { value: "dark", label: t("themes.dark"), gradient: "linear-gradient(to bottom right, #475569, #1f2937)" },
+    { value: "red", label: t("themes.red"), gradient: "linear-gradient(to bottom right, #ef4444, #e11d48)" },
+    { value: "blue", label: t("themes.blue"), gradient: "linear-gradient(to bottom right, #3b82f6, #4f46e5)" },
+    { value: "green", label: t("themes.green"), gradient: "linear-gradient(to bottom right, #10b981, #0d9488)" },
+    { value: "purple", label: t("themes.purple"), gradient: "linear-gradient(to bottom right, #8b5cf6, #ec4899)" },
   ]
 
   return (
@@ -58,8 +60,8 @@ export const ThemeSwitcher: React.FC = () => {
                 setIsOpen(false)
               }}
               className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${theme === value
-                  ? "bg-white/10 border border-white/20"
-                  : "hover:bg-white/5"
+                ? "bg-white/10 border border-white/20"
+                : "hover:bg-white/5"
                 }`}
             >
               <div

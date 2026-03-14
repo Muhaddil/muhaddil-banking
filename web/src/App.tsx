@@ -168,6 +168,28 @@ interface AppContentProps {
   getTotalIncome: () => number
   getTotalExpense: () => number
   onSelectAccount: (id: number) => void
+  isLoading: boolean
+}
+
+const LoadingOverlay: React.FC = () => {
+  const { t } = useLocale()
+  return (
+    <div className="flex-1 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-5">
+        <div className="relative w-20 h-20">
+          <div className="absolute inset-0 rounded-full border-4 border-white/10" />
+          <div className="absolute inset-0 rounded-full border-4 border-t-indigo-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+          <div className="absolute inset-2 rounded-full border-4 border-t-transparent border-r-transparent border-b-indigo-300/50 border-l-transparent animate-spin [animation-direction:reverse] [animation-duration:600ms]" />
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <p className="text-white font-semibold text-lg tracking-wide animate-pulse">
+            {t("dashboard.loading_bank")}
+          </p>
+          <p className="text-white/40 text-sm">{t("dashboard.loading_bank_subtitle")}</p>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 const AppContent: React.FC<AppContentProps> = ({
@@ -186,9 +208,9 @@ const AppContent: React.FC<AppContentProps> = ({
   getTotalIncome,
   getTotalExpense,
   onSelectAccount,
+  isLoading,
 }) => {
   const { t } = useLocale()
-
   const cashAvailable = data.playerMoney ?? 0
 
   useEffect(() => {
@@ -242,124 +264,130 @@ const AppContent: React.FC<AppContentProps> = ({
             isAdmin={data.isAdmin}
           />
 
-          <main className="flex-1 p-4 md:p-8 overflow-y-auto custom-scrollbar">
-            {activeTab === "accounts" && selectedAccount && (
-              <div className="mb-6 animate-slide-down">
-                <QuickActions
-                  onAction={(action: "deposit" | "withdraw" | "transfer" | "createAccount") =>
-                    setModalState({ type: action, isOpen: true })
-                  }
-                  playerMoney={data.playerMoney}
-                />
-              </div>
-            )}
+          <main className="flex-1 p-4 md:p-8 overflow-y-auto custom-scrollbar flex flex-col">
+            {isLoading ? (
+              <LoadingOverlay />
+            ) : (
+              <>
+                {activeTab === "accounts" && selectedAccount && (
+                  <div className="mb-6 animate-slide-down">
+                    <QuickActions
+                      onAction={(action: "deposit" | "withdraw" | "transfer" | "createAccount") =>
+                        setModalState({ type: action, isOpen: true })
+                      }
+                      playerMoney={data.playerMoney}
+                    />
+                  </div>
+                )}
 
-            {activeTab === "accounts" && (
-              <Dashboard
-                selectedAccount={selectedAccount}
-                accounts={data.accounts}
-                sharedAccounts={data.sharedAccounts}
-                onSelectAccount={onSelectAccount}
-                onAction={(action: DashboardAction) =>
-                  setModalState({ type: action, isOpen: true })
-                }
-                maxAccounts={data.maxAccounts}
-                currentBank={data.currentBank}
-                currentBankType={data.currentBankType}
-                currentBankCommissionRate={data.currentBankCommissionRate}
-                playerMoney={data.playerMoney}
-              />
-            )}
-
-            {activeTab === "transactions" && (
-              <TransactionHistory
-                transactions={
-                  selectedAccount ? data.transactions.filter((t) => t.account_id === selectedAccount.id) : []
-                }
-              />
-            )}
-
-            {activeTab === "loans" && (
-              <LoanManager
-                loans={data.loans}
-                onRequestLoan={() => setModalState({ type: "loan", isOpen: true })}
-                onPayLoan={(loanId, amount) => fetchNui("payLoan", { loanId, amount })}
-              />
-            )}
-
-            {activeTab === "stats" && (
-              <Suspense fallback={<div className="text-white">Loading stats...</div>}>
-                {selectedAccount ? (
-                  <StatsView
-                    data={getChartData()}
-                    totalIncome={getTotalIncome()}
-                    totalExpense={getTotalExpense()}
-                    currentBalance={parseFloat(selectedAccount?.balance ?? "0")}
-                  />
-                ) : (
-                  <StatsView
-                    data={[]}
-                    totalIncome={0}
-                    totalExpense={0}
-                    currentBalance={0}
+                {activeTab === "accounts" && (
+                  <Dashboard
+                    selectedAccount={selectedAccount}
+                    accounts={data.accounts}
+                    sharedAccounts={data.sharedAccounts}
+                    onSelectAccount={onSelectAccount}
+                    onAction={(action: DashboardAction) =>
+                      setModalState({ type: action, isOpen: true })
+                    }
+                    maxAccounts={data.maxAccounts}
+                    currentBank={data.currentBank}
+                    currentBankType={data.currentBankType}
+                    currentBankCommissionRate={data.currentBankCommissionRate}
+                    playerMoney={data.playerMoney}
                   />
                 )}
-              </Suspense>
-            )}
-            
-            {activeTab === "cards" && <CardManager accounts={data.accounts} />}
 
-            {activeTab === "banks" && <BankManager ownedBanks={data.ownedBanks} availableBanks={data.availableBanks} />}
+                {activeTab === "transactions" && (
+                  <TransactionHistory
+                    transactions={
+                      selectedAccount ? data.transactions.filter((t) => t.account_id === selectedAccount.id) : []
+                    }
+                  />
+                )}
 
-            {activeTab === "savings" && (
-              <SavingsManager
-                savings={data.savings}
-                accounts={data.accounts}
-                config={data.savingsConfig}
-                onCreateSavings={(d) => fetchNui("createSavings", d)}
-                onDepositSavings={(d) => fetchNui("depositSavings", d)}
-                onWithdrawSavings={(d) => fetchNui("withdrawSavings", d)}
-                onDeleteSavings={(id) => fetchNui("deleteSavings", { savingsId: id })}
-              />
-            )}
+                {activeTab === "loans" && (
+                  <LoanManager
+                    loans={data.loans}
+                    onRequestLoan={() => setModalState({ type: "loan", isOpen: true })}
+                    onPayLoan={(loanId, amount) => fetchNui("payLoan", { loanId, amount })}
+                  />
+                )}
 
-            {activeTab === "contacts" && (
-              <ContactManager
-                contacts={data.contacts}
-                config={data.contactsConfig}
-                onAddContact={(d) => fetchNui("addContact", d)}
-                onUpdateContact={(d) => fetchNui("updateContact", d)}
-                onRemoveContact={(id) => fetchNui("removeContact", { contactId: id })}
-              />
-            )}
+                {activeTab === "stats" && (
+                  <Suspense fallback={<div className="text-white">Loading stats...</div>}>
+                    {selectedAccount ? (
+                      <StatsView
+                        data={getChartData()}
+                        totalIncome={getTotalIncome()}
+                        totalExpense={getTotalExpense()}
+                        currentBalance={parseFloat(selectedAccount?.balance ?? "0")}
+                      />
+                    ) : (
+                      <StatsView
+                        data={[]}
+                        totalIncome={0}
+                        totalExpense={0}
+                        currentBalance={0}
+                      />
+                    )}
+                  </Suspense>
+                )}
 
-            {activeTab === "requests" && (
-              <TransferRequests
-                incoming={data.transferRequests.incoming}
-                outgoing={data.transferRequests.outgoing}
-                accounts={data.accounts}
-                config={data.transferRequestsConfig}
-                onCreateRequest={(d) => fetchNui("createTransferRequest", d)}
-                onAcceptRequest={(d) => fetchNui("acceptTransferRequest", d)}
-                onRejectRequest={(id) => fetchNui("rejectTransferRequest", { requestId: id })}
-                onCancelRequest={(id) => fetchNui("cancelTransferRequest", { requestId: id })}
-              />
-            )}
+                {activeTab === "cards" && <CardManager accounts={data.accounts} />}
 
-            {activeTab === "scheduled" && (
-              <ScheduledTransfers
-                transfers={data.scheduledTransfers}
-                accounts={data.accounts}
-                config={data.scheduledTransfersConfig}
-                onCreateTransfer={(d) => fetchNui("createScheduledTransfer", d)}
-                onUpdateTransfer={(d) => fetchNui("updateScheduledTransfer", d)}
-                onToggleTransfer={(id) => fetchNui("toggleScheduledTransfer", { transferId: id })}
-                onDeleteTransfer={(id) => fetchNui("deleteScheduledTransfer", { transferId: id })}
-              />
-            )}
+                {activeTab === "banks" && <BankManager ownedBanks={data.ownedBanks} availableBanks={data.availableBanks} />}
 
-            {activeTab === "admin" && (
-              <AdminPanel onClose={() => setActiveTab("accounts")} />
+                {activeTab === "savings" && (
+                  <SavingsManager
+                    savings={data.savings}
+                    accounts={data.accounts}
+                    config={data.savingsConfig}
+                    onCreateSavings={(d) => fetchNui("createSavings", d)}
+                    onDepositSavings={(d) => fetchNui("depositSavings", d)}
+                    onWithdrawSavings={(d) => fetchNui("withdrawSavings", d)}
+                    onDeleteSavings={(id) => fetchNui("deleteSavings", { savingsId: id })}
+                  />
+                )}
+
+                {activeTab === "contacts" && (
+                  <ContactManager
+                    contacts={data.contacts}
+                    config={data.contactsConfig}
+                    onAddContact={(d) => fetchNui("addContact", d)}
+                    onUpdateContact={(d) => fetchNui("updateContact", d)}
+                    onRemoveContact={(id) => fetchNui("removeContact", { contactId: id })}
+                  />
+                )}
+
+                {activeTab === "requests" && (
+                  <TransferRequests
+                    incoming={data.transferRequests.incoming}
+                    outgoing={data.transferRequests.outgoing}
+                    accounts={data.accounts}
+                    config={data.transferRequestsConfig}
+                    onCreateRequest={(d) => fetchNui("createTransferRequest", d)}
+                    onAcceptRequest={(d) => fetchNui("acceptTransferRequest", d)}
+                    onRejectRequest={(id) => fetchNui("rejectTransferRequest", { requestId: id })}
+                    onCancelRequest={(id) => fetchNui("cancelTransferRequest", { requestId: id })}
+                  />
+                )}
+
+                {activeTab === "scheduled" && (
+                  <ScheduledTransfers
+                    transfers={data.scheduledTransfers}
+                    accounts={data.accounts}
+                    config={data.scheduledTransfersConfig}
+                    onCreateTransfer={(d) => fetchNui("createScheduledTransfer", d)}
+                    onUpdateTransfer={(d) => fetchNui("updateScheduledTransfer", d)}
+                    onToggleTransfer={(id) => fetchNui("toggleScheduledTransfer", { transferId: id })}
+                    onDeleteTransfer={(id) => fetchNui("deleteScheduledTransfer", { transferId: id })}
+                  />
+                )}
+
+                {activeTab === "admin" && (
+                  <AdminPanel onClose={() => setActiveTab("accounts")} />
+                )}
+              </>
             )}
           </main>
         </div>
@@ -518,6 +546,7 @@ const AppContent: React.FC<AppContentProps> = ({
 
 const App = () => {
   const [visible, setVisible] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [data, setData] = useState<AppData>({
     accounts: [],
     sharedAccounts: [],
@@ -561,6 +590,10 @@ const App = () => {
   })
 
   useNuiEvent("setVisible", (event: boolean) => {
+    if (event) {
+      setIsLoading(true)
+      setTimeout(() => setIsLoading(false), 3000)
+    }
     setVisible(event)
   })
 
@@ -599,6 +632,7 @@ const App = () => {
       currentBankCommissionRate: event.commissionRate ?? payload.comissionRate ?? prev.currentBankCommissionRate,
       bankManagementEnabled: event.bankManagementEnabled ?? payload.bankManagementEnabled ?? prev.bankManagementEnabled,
     }))
+
     setSelectedAccountId((currentId) => {
       if (allAccounts.length === 0) return null
 
@@ -610,6 +644,8 @@ const App = () => {
 
       return currentId
     })
+
+    setIsLoading(false)
   })
 
   useNuiEvent<{ type: string; message: string }>("notify", (event) => {
@@ -740,6 +776,7 @@ const App = () => {
           getTotalIncome={getTotalIncome}
           getTotalExpense={getTotalExpense}
           onSelectAccount={(id) => setSelectedAccountId(id)}
+          isLoading={isLoading}
         />
       </ThemeProvider>
     </LocaleProvider>

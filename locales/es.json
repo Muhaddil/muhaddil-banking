@@ -29,6 +29,8 @@
     "personalAccount": "Cuenta Personal",
     "newAccount": "Nueva Cuenta",
     "maxAccountsReached": "Has alcanzado el límite de {max} cuentas",
+    "loading_bank": "Cargando banco...",
+    "loading_bank_subtitle": "Por favor espera",
     "bankInfo": {
       "associated": "Banco Asociado",
       "commission": "Tasa de Comisión",
@@ -122,6 +124,13 @@
       "withdraw": "Retirar fondos",
       "transfer": "Transferir dinero"
     }
+  },
+  "themes": {
+    "dark": "Oscuro",
+    "red": "Rojo",
+    "blue": "Azul",
+    "green": "Verde",
+    "purple": "Púrpura"
   },
   "banks": {
     "bankManagement": "Gestión de Bancos",
