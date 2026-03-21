@@ -156,22 +156,18 @@
   }
 
   .glass-button {
-    background: linear-gradient(
-      135deg,
-      rgba(var(--accent-primary), 0.8),
-      rgba(var(--accent-secondary), 0.8)
-    );
+    background: linear-gradient(135deg,
+        rgba(var(--accent-primary), 0.8),
+        rgba(var(--accent-secondary), 0.8));
     backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
   }
 
   .glass-button:hover {
-    background: linear-gradient(
-      135deg,
-      rgba(var(--accent-primary), 1),
-      rgba(var(--accent-secondary), 1)
-    );
+    background: linear-gradient(135deg,
+        rgba(var(--accent-primary), 1),
+        rgba(var(--accent-secondary), 1));
     box-shadow: 0 0 20px rgba(var(--accent-glow), 0.6);
     transform: translateY(-2px);
   }
@@ -200,11 +196,9 @@
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-image: linear-gradient(
-      to right,
-      rgb(var(--accent-primary)),
-      rgb(var(--accent-secondary))
-    );
+    background-image: linear-gradient(to right,
+        rgb(var(--accent-primary)),
+        rgb(var(--accent-secondary)));
   }
 
   .animate-in {
