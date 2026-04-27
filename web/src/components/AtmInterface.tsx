@@ -30,7 +30,7 @@ interface AtmInterfaceProps {
     onClose: () => void
     onDeposit: (accountId: number, amount: number) => void
     onWithdraw: (accountId: number, amount: number) => void
-    onTransfer: (fromId: number, toId: number, amount: number) => void
+    onTransfer: (fromId: number, toId: string | number, amount: number) => void
     onVerifyPin: (pin: string, cardId: number, accountId: number) => Promise<{ success: boolean; error?: string; accountData?: any }>
 }
 
@@ -198,8 +198,8 @@ export const AtmInterface: React.FC<AtmInterfaceProps> = ({
                 balance: (parseFloat(selectedAccount.balance) - numAmount).toString()
             })
         } else if (action === "transfer") {
-            const targetId = parseInt(targetAccountId)
-            if (isNaN(targetId)) return
+            const targetId = targetAccountId
+            if (!targetId) return
             if (numAmount > parseFloat(selectedAccount.balance)) {
                 setPinError(t("server.insufficient_balance"))
                 return
@@ -583,18 +583,18 @@ export const AtmInterface: React.FC<AtmInterfaceProps> = ({
                     </div>
 
                     <div className="bg-gradient-to-br from-[rgb(var(--accent-primary))]/10 to-[rgb(var(--accent-secondary))]/10 rounded-xl p-5 border border-[rgb(var(--accent-primary))]/20">
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <p className="text-[rgb(var(--text-muted))] text-xs uppercase tracking-wider mb-1">
+                        <div className="flex justify-between items-center gap-4">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[rgb(var(--text-muted))] text-xs uppercase tracking-wider mb-1 truncate">
                                     {t("atm.availableBalance")}
                                 </p>
-                                <p className="text-3xl font-bold text-[rgb(var(--text-primary))]">
+                                <p className="text-2xl sm:text-3xl font-bold text-[rgb(var(--text-primary))] truncate">
                                     {selectedAccount ? formatMoney(selectedAccount.balance) : "$0.00"}
                                 </p>
                             </div>
-                            <div className="text-right bg-[rgb(var(--bg-card))]/50 px-4 py-2 rounded-lg border border-white/10">
-                                <p className="text-[rgb(var(--text-muted))] text-xs uppercase tracking-wider mb-1">{t("atm.cash")}</p>
-                                <p className="text-lg font-bold text-[rgb(var(--text-primary))]">{formatMoney(data.cash)}</p>
+                            <div className="text-right shrink-0 bg-[rgb(var(--bg-card))]/50 px-3 py-2 rounded-lg border border-white/10 max-w-[40%]">
+                                <p className="text-[rgb(var(--text-muted))] text-xs uppercase tracking-wider mb-1 truncate">{t("atm.cash")}</p>
+                                <p className="text-base sm:text-lg font-bold text-[rgb(var(--text-primary))] truncate">{formatMoney(data.cash)}</p>
                             </div>
                         </div>
                     </div>
@@ -722,7 +722,7 @@ export const AtmInterface: React.FC<AtmInterfaceProps> = ({
                                 <div className="relative">
                                     <Landmark className="absolute left-4 top-1/2 -translate-y-1/2 text-[rgb(var(--text-muted))]" size={20} />
                                     <input
-                                        type="number"
+                                        type="text"
                                         placeholder="****"
                                         value={targetAccountId}
                                         onChange={(e) => setTargetAccountId(e.target.value)}

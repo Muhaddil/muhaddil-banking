@@ -209,7 +209,47 @@ lib.callback.register('muhaddil_bank:getData', function(source, bankId)
         ORDER BY bst.created_at DESC
     ]], { identifier })
 
+    local checks = {}
+    local checksConfig = { enabled = false }
+    if Config.Checks and Config.Checks.Enabled then
+        checksConfig = {
+            enabled = true,
+            maxAmount = Config.Checks.MaxAmount,
+            minAmount = Config.Checks.MinAmount,
+            fee = Config.Checks.Fee,
+            expirationDays = Config.Checks.ExpirationDays,
+            maxActiveChecks = Config.Checks.MaxActiveChecks,
+            useInventoryItem = Config.Checks.UseInventoryItem,
+            allowForging = Config.Checks.AllowForging,
+        }
+        checks = MySQL.query.await([[
+            SELECT bc.*, ba.account_name as from_account_name
+            FROM bank_checks bc
+            LEFT JOIN bank_accounts ba ON bc.from_account_id = ba.id
+            WHERE bc.issuer = ?
+            ORDER BY bc.created_at DESC
+            LIMIT 50
+        ]], { identifier }) or {}
+    end
+
+    local directDebits = {}
+    local directDebitsConfig = { enabled = false }
+    if Config.DirectDebits and Config.DirectDebits.Enabled then
+        directDebitsConfig = {
+            enabled = true,
+            maxPerPlayer = Config.DirectDebits.MaxPerPlayer,
+        }
+        directDebits = MySQL.query.await([[
+            SELECT bdd.*, ba.account_name
+            FROM bank_direct_debits bdd
+            LEFT JOIN bank_accounts ba ON bdd.account_id = ba.id
+            WHERE bdd.owner = ?
+            ORDER BY bdd.created_at DESC
+        ]], { identifier }) or {}
+    end
+
     local creditScore = GetPlayerCreditScore(identifier)
+    local creditScoreTier = GetCreditScoreTier(creditScore)
 
     local cash = GetPlayerMoney(source)
 
@@ -224,8 +264,12 @@ lib.callback.register('muhaddil_bank:getData', function(source, bankId)
             maxActiveLoans = Config.Loans.MaxActiveLoans,
             earlyRepaymentDiscount = Config.Loans.EarlyRepaymentDiscount,
             creditScoreEnabled = Config.Loans.CreditScore and Config.Loans.CreditScore.Enabled or false,
+            denyBelowScore = Config.Loans.CreditScore and Config.Loans.CreditScore.DenyBelowScore or 0,
+            scoreTiers = Config.Loans.CreditScore and Config.Loans.CreditScore.ScoreTiers or {},
         },
         creditScore = creditScore,
+        creditScoreTier = creditScoreTier,
+        ibanEnabled = Config.IBAN and Config.IBAN.Enabled or false,
         ownedBanks = ownedBanks or {},
         availableBanks = availableBanks,
         savings = savings or {},
@@ -256,6 +300,10 @@ lib.callback.register('muhaddil_bank:getData', function(source, bankId)
             minAmount = Config.ScheduledTransfers.MinAmount,
             frequencies = Config.ScheduledTransfers.Frequencies,
         },
+        checks = checks,
+        checksConfig = checksConfig,
+        directDebits = directDebits,
+        directDebitsConfig = directDebitsConfig,
         cash = cash,
         playerIdentifier = identifier,
         currentBankInfo = currentBankInfo
@@ -290,6 +338,11 @@ RegisterNetEvent('muhaddil_bank:createAccount', function(data)
     local accountId = MySQL.insert.await('INSERT INTO bank_accounts (owner, account_name, balance) VALUES (?, ?, ?)', {
         identifier, accountName, initialBalance
     })
+
+    if Config.IBAN and Config.IBAN.Enabled then
+        local iban = GenerateIBAN(nil)
+        MySQL.query.await('UPDATE bank_accounts SET iban = ? WHERE id = ?', { iban, accountId })
+    end
 
     if isFirstAccount and initialBalance > Config.Accounts.InitialBalance then
         MySQL.insert.await([[
@@ -522,6 +575,20 @@ function requestLoan(src, data)
     end
 
     local creditScore = GetPlayerCreditScore(identifier)
+
+    if Config.Loans.CreditScore and Config.Loans.CreditScore.Enabled then
+        local denyBelow = Config.Loans.CreditScore.DenyBelowScore or 0
+        if denyBelow > 0 and creditScore < denyBelow then
+            return false,
+                Locale('server.loan_denied_credit_score') or
+                'Tu puntuación crediticia es demasiado baja para solicitar un préstamo.'
+        end
+    end
+
+    if Config.Loans.CreditScore and Config.Loans.CreditScore.Enabled then
+        local tier = GetCreditScoreTier(creditScore)
+        interestRate = interestRate * tier.interestMultiplier
+    end
 
     local totalWithInterest = amount * (1 + (interestRate / 100))
 
@@ -799,15 +866,19 @@ exports('Transfer', function(source, fromAccountId, toAccountId, amount, bankLoc
     local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
 
-    fromAccountId      = tonumber(fromAccountId)
-    toAccountId        = tonumber(toAccountId)
+    print(fromAccountId, toAccountId, amount, bankLocation)
+
+    fromAccountId      = fromAccountId
+    local resolvedToId = ResolveAccountId(toAccountId)
     amount             = tonumber(amount)
 
     local bankLocation = bankLocation
 
-    if not fromAccountId or not toAccountId then
+    if not fromAccountId or not resolvedToId then
         return Notify(src, 'error', Locale('server.invalid_account'))
     end
+
+    toAccountId = resolvedToId
 
     if not amount or amount <= 0 then
         return Notify(src, 'error', Locale('server.invalid_amount'))
@@ -842,12 +913,12 @@ exports('Transfer', function(source, fromAccountId, toAccountId, amount, bankLoc
         {
             query =
             'INSERT INTO bank_transactions (account_id, type, amount, description, bank_location) VALUES (?, ?, ?, ?, ?)',
-            values = { fromAccountId, 'transfer_out', -amount, 'Transferencia a cuenta #' .. toAccountId, bankLocation }
+            values = { fromAccountId, 'transfer_out', -amount, Locale('server.transfer_out', toAccountId, amount), bankLocation }
         },
         {
             query =
             'INSERT INTO bank_transactions (account_id, type, amount, description, bank_location) VALUES (?, ?, ?, ?, ?)',
-            values = { toAccountId, 'transfer_in', amount, 'Transferencia desde cuenta #' .. fromAccountId, bankLocation }
+            values = { toAccountId, 'transfer_in', amount, Locale('server.transfer_in', fromAccountId, amount), bankLocation }
         }
     })
 

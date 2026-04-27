@@ -229,7 +229,7 @@ export const TransferRequests: React.FC<TransferRequestsProps> = ({
                         <div className="space-y-4">
                             <div>
                                 <label className="text-sm text-[rgb(var(--text-secondary))] mb-1 block">{t("transferRequests.targetPlayer")}</label>
-                                <input type="number" value={targetPlayerId} onChange={e => setTargetPlayerId(e.target.value)}
+                                <input type="text" value={targetPlayerId} onChange={e => setTargetPlayerId(e.target.value)}
                                     placeholder={t("transferRequests.playerIdPlaceholder")}
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white" />
                             </div>

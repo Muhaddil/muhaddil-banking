@@ -99,7 +99,7 @@ RegisterNetEvent('muhaddil_bank:depositSavings', function(data)
         },
         {
             query = 'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-            values = { savings.account_id, 'savings_deposit', -amount, 'Depósito en ahorro: ' .. savings.goal_name }
+            values = { savings.account_id, 'savings_deposit', -amount, Locale('server.deposit_to_savings', savings.goal_name, amount) }
         }
     })
 
@@ -143,7 +143,7 @@ RegisterNetEvent('muhaddil_bank:withdrawSavings', function(data)
         },
         {
             query = 'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-            values = { savings.account_id, 'savings_withdraw', amount, 'Retiro de ahorro: ' .. savings.goal_name }
+            values = { savings.account_id, 'savings_withdraw', amount, Locale('server.withdraw_from_savings', savings.goal_name, amount) }
         }
     })
 
@@ -175,7 +175,7 @@ RegisterNetEvent('muhaddil_bank:deleteSavings', function(savingsId)
         MySQL.insert.await([[
             INSERT INTO bank_transactions (account_id, type, amount, description)
             VALUES (?, 'savings_close', ?, ?)
-        ]], { savings.account_id, currentAmount, 'Cierre de ahorro: ' .. savings.goal_name })
+        ]], { savings.account_id, currentAmount, Locale('server.savings_close', savings.goal_name, currentAmount) })
     end
 
     MySQL.query.await('DELETE FROM bank_savings_accounts WHERE id = ?', { savingsId })
@@ -187,6 +187,12 @@ end)
 if Config.Savings.Enabled then
     Wait(12000)
     local cronExpr = buildCronExpression(Config.Savings.InterestIntervalHours)
+
+    print(string.format(
+        '^3[Bank System] Registering savings interest cron with expression: "%s" (every %.2f hours)^7',
+        cronExpr,
+        tonumber(Config.Savings.InterestIntervalHours)
+    ))
 
     lib.cron.new(cronExpr, function()
         print('^3[Bank System] Processing savings interest...^7')
@@ -211,7 +217,7 @@ if Config.Savings.Enabled then
                 MySQL.insert.await([[
                     INSERT INTO bank_transactions (account_id, type, amount, description)
                     VALUES (?, 'savings_interest', ?, ?)
-                ]], { s.account_id, interest, 'Interés de ahorro: ' .. s.goal_name })
+                ]], { s.account_id, interest, Locale('server.savings_interest', s.goal_name, interest) })
 
                 processed = processed + 1
             end

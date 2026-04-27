@@ -23,7 +23,7 @@ RegisterNetEvent('muhaddil_bank:addContact', function(data)
     end
 
     local contactName = data.contactName
-    local contactAccountId = tonumber(data.contactAccountId)
+    local contactAccountId = ResolveAccountId(data.contactAccountId)
     local notes = data.notes or ''
 
     if not contactName or contactName == '' then

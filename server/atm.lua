@@ -166,7 +166,7 @@ RegisterNetEvent('muhaddil_bank:atmTransfer', function(fromAccountId, toAccountI
     if not identifier then return end
 
     fromAccountId = tonumber(fromAccountId)
-    toAccountId = tonumber(toAccountId)
+    toAccountId = exports['muhaddil-banking']:ResolveAccountId(toAccountId)
     amount = tonumber(amount)
 
     if not fromAccountId or not toAccountId then
@@ -325,7 +325,7 @@ exports('ATMTransfer', function(source, fromAccountId, toAccountId, amount)
     if not identifier then return false, Locale('server.invalid_identifier') end
 
     fromAccountId = tonumber(fromAccountId)
-    toAccountId = tonumber(toAccountId)
+    toAccountId = exports['muhaddil-banking']:ResolveAccountId(toAccountId)
     amount = tonumber(amount)
 
     if not fromAccountId or not toAccountId or not amount or amount <= 0 then

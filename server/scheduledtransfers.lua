@@ -26,7 +26,7 @@ RegisterNetEvent('muhaddil_bank:createScheduledTransfer', function(data)
     end
 
     local fromAccountId = tonumber(data.fromAccountId)
-    local toAccountId = tonumber(data.toAccountId)
+    local toAccountId = ResolveAccountId(data.toAccountId)
     local amount = tonumber(data.amount)
     local frequency = data.frequency
     local dayOfWeek = tonumber(data.dayOfWeek) or 1

@@ -114,7 +114,7 @@ const AccountCard: React.FC<{
                     `}
                     >
                         {isShared && <Sparkles size={10} />}
-                        <span>**** {account.id}</span>
+                        <span>{(account as any).iban ? (account as any).iban : `**** ${account.id}`}</span>
                     </div>
                 </div>
 

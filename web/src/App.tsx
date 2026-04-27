@@ -23,6 +23,10 @@ import { ContactManager } from "./components/ContactManager"
 import { TransferRequests } from "./components/TransferRequests"
 import { ScheduledTransfers } from "./components/ScheduledTransfers"
 import { AdminPanel } from "./components/AdminPanel"
+import { CheckManager } from "./components/CheckManager"
+import { DirectDebitsManager } from "./components/DirectDebitsManager"
+import { CheckViewerNui } from "./components/CheckViewerNui"
+import { CheckForgeNui } from "./components/CheckForgeNui"
 
 type DashboardAction =
   | "deposit"
@@ -110,6 +114,12 @@ interface AppData {
   transferRequestsConfig: any
   scheduledTransfers: any[]
   scheduledTransfersConfig: any
+  checks: any[]
+  checksConfig: any
+  directDebits: any[]
+  directDebitsConfig: any
+  creditScoreTier: any
+  ibanEnabled: boolean
   playerMoney: number
   maxAccounts?: number
   currentBank?: string
@@ -118,6 +128,11 @@ interface AppData {
   currentBankCommissionRate?: number
   currentBankIsOwned?: boolean
   bankManagementEnabled?: boolean
+  directDebitsEnabled?: boolean
+  checksEnabled?: boolean
+  scheduleChecksEnabled?: boolean
+  transferRequestsEnabled?: boolean
+  contactsEnabled?: boolean
   isAdmin?: boolean
 }
 
@@ -261,6 +276,11 @@ const AppContent: React.FC<AppContentProps> = ({
             currentBank={data.currentBank}
             currentBankType={data.currentBankType}
             bankManagementEnabled={data.bankManagementEnabled}
+            directDebitsEnabled={data.directDebitsEnabled}
+            checksEnabled={data.checksEnabled}
+            scheduleChecksEnabled={data.scheduleChecksEnabled}
+            transferRequestsEnabled={data.transferRequestsEnabled}
+            contactsEnabled={data.contactsEnabled}
             isAdmin={data.isAdmin}
           />
 
@@ -310,6 +330,8 @@ const AppContent: React.FC<AppContentProps> = ({
                     loans={data.loans}
                     onRequestLoan={() => setModalState({ type: "loan", isOpen: true })}
                     onPayLoan={(loanId, amount) => fetchNui("payLoan", { loanId, amount })}
+                    creditScore={data.creditScore}
+                    creditScoreTier={data.creditScoreTier}
                   />
                 )}
 
@@ -381,6 +403,22 @@ const AppContent: React.FC<AppContentProps> = ({
                     onUpdateTransfer={(d) => fetchNui("updateScheduledTransfer", d)}
                     onToggleTransfer={(id) => fetchNui("toggleScheduledTransfer", { transferId: id })}
                     onDeleteTransfer={(id) => fetchNui("deleteScheduledTransfer", { transferId: id })}
+                  />
+                )}
+
+                {activeTab === "checks" && (
+                  <CheckManager
+                    checks={data.checks}
+                    accounts={data.accounts}
+                    config={data.checksConfig}
+                  />
+                )}
+
+                {activeTab === "directdebits" && (
+                  <DirectDebitsManager
+                    debits={data.directDebits}
+                    accounts={data.accounts}
+                    config={data.directDebitsConfig}
                   />
                 )}
 
@@ -480,7 +518,7 @@ const AppContent: React.FC<AppContentProps> = ({
                   )}
 
                   <input
-                    type="number"
+                    type="text"
                     placeholder={t("modals.transfer.toAccount")}
                     value={formData.transferToAccount}
                     onChange={(e) => setFormData({ ...formData, transferToAccount: e.target.value })}
@@ -547,6 +585,10 @@ const AppContent: React.FC<AppContentProps> = ({
 const App = () => {
   const [visible, setVisible] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [standaloneCheckData, setStandaloneCheckData] = useState<any | null>(null)
+  const [standaloneForgeVisible, setStandaloneForgeVisible] = useState(false)
+  const [standaloneCheckClosing, setStandaloneCheckClosing] = useState(false)
+  const [standaloneForgeClosing, setStandaloneForgeClosing] = useState(false)
   const [data, setData] = useState<AppData>({
     accounts: [],
     sharedAccounts: [],
@@ -565,6 +607,12 @@ const App = () => {
     transferRequestsConfig: { enabled: false, maxPending: 10 },
     scheduledTransfers: [],
     scheduledTransfersConfig: { enabled: false, maxPerPlayer: 10, minAmount: 50, frequencies: ['daily', 'weekly', 'biweekly', 'monthly'] },
+    checks: [],
+    checksConfig: { enabled: false, maxAmount: 1000000, minAmount: 100, fee: 50, expirationDays: 7, maxActiveChecks: 10, useInventoryItem: false, allowForging: false },
+    directDebits: [],
+    directDebitsConfig: { enabled: false, maxPerPlayer: 15 },
+    creditScoreTier: { minScore: 0, interestMultiplier: 1.0, label: 'good' },
+    ibanEnabled: false,
     playerMoney: 0,
     maxAccounts: undefined,
   })
@@ -624,6 +672,12 @@ const App = () => {
       transferRequestsConfig: payload.transferRequestsConfig || prev.transferRequestsConfig,
       scheduledTransfers: payload.scheduledTransfers || [],
       scheduledTransfersConfig: payload.scheduledTransfersConfig || prev.scheduledTransfersConfig,
+      checks: payload.checks || [],
+      checksConfig: payload.checksConfig || prev.checksConfig,
+      directDebits: payload.directDebits || [],
+      directDebitsConfig: payload.directDebitsConfig || prev.directDebitsConfig,
+      creditScoreTier: payload.creditScoreTier || prev.creditScoreTier,
+      ibanEnabled: payload.ibanEnabled ?? prev.ibanEnabled,
       playerMoney: payload.cash ?? 0,
       maxAccounts: payload.maxAccounts,
       currentBank: incomingCurrentBank ?? prev.currentBank,
@@ -631,6 +685,11 @@ const App = () => {
       currentBankType: event.currentBankType ?? payload.currentBankType ?? prev.currentBankType,
       currentBankCommissionRate: event.commissionRate ?? payload.comissionRate ?? prev.currentBankCommissionRate,
       bankManagementEnabled: event.bankManagementEnabled ?? payload.bankManagementEnabled ?? prev.bankManagementEnabled,
+      directDebitsEnabled: event.directDebitsEnabled ?? payload.directDebitsEnabled ?? prev.directDebitsEnabled,
+      checksEnabled: event.checksEnabled ?? payload.checksEnabled ?? prev.checksEnabled,
+      scheduleChecksEnabled: event.scheduleChecksEnabled ?? payload.scheduleChecksEnabled ?? prev.scheduleChecksEnabled,
+      transferRequestsEnabled: event.transferRequestsEnabled ?? payload.transferRequestsEnabled ?? prev.transferRequestsEnabled,
+      contactsEnabled: event.contactsEnabled ?? payload.contactsEnabled ?? prev.contactsEnabled,
     }))
 
     setSelectedAccountId((currentId) => {
@@ -679,7 +738,7 @@ const App = () => {
         return toast.error("Datos incompletos")
       fetchNui("transfer", {
         fromAccountId: selectedAccount.id,
-        toAccountId: parseInt(formData.transferToAccount),
+        toAccountId: formData.transferToAccount,
         amount: parseFloat(formData.transferAmount),
       })
     } else if (action === "loan") {
@@ -755,29 +814,74 @@ const App = () => {
     setData((prev) => ({ ...prev, isAdmin: true }))
   })
 
-  if (!visible) return null
+  useNuiEvent("openCheckViewer", (event: any) => {
+    const checkData = event.checkData || {}
+    setStandaloneCheckData({ ...checkData, slot: event.checkSlot ?? checkData.slot })
+    setStandaloneForgeVisible(false)
+    setStandaloneCheckClosing(false)
+    setStandaloneForgeClosing(false)
+    setVisible(false)
+  })
+
+  useNuiEvent("openForgeMenu", () => {
+    setStandaloneCheckData(null)
+    setStandaloneForgeVisible(true)
+    setStandaloneCheckClosing(false)
+    setStandaloneForgeClosing(false)
+    setVisible(false)
+  })
+
+  const closeStandaloneUi = useCallback(() => {
+    if (standaloneCheckData) setStandaloneCheckClosing(true)
+    if (standaloneForgeVisible) setStandaloneForgeClosing(true)
+
+    setTimeout(() => {
+      setStandaloneCheckData(null)
+      setStandaloneForgeVisible(false)
+      setStandaloneCheckClosing(false)
+      setStandaloneForgeClosing(false)
+      fetchNui("close")
+    }, 240)
+  }, [standaloneCheckData, standaloneForgeVisible])
+
+  useEffect(() => {
+    const handleEscapeStandalone = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && (standaloneCheckData || standaloneForgeVisible)) {
+        closeStandaloneUi()
+      }
+    }
+
+    window.addEventListener("keydown", handleEscapeStandalone)
+    return () => window.removeEventListener("keydown", handleEscapeStandalone)
+  }, [standaloneCheckData, standaloneForgeVisible, closeStandaloneUi])
+
+  if (!visible && !standaloneCheckData && !standaloneForgeVisible) return null
 
   return (
     <LocaleProvider>
       <ThemeProvider>
-        <AppContent
-          visible={visible}
-          setVisible={setVisible}
-          data={data}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          selectedAccount={selectedAccount}
-          modalState={modalState}
-          setModalState={setModalState}
-          formData={formData}
-          setFormData={setFormData}
-          submitAction={submitAction}
-          getChartData={getChartData}
-          getTotalIncome={getTotalIncome}
-          getTotalExpense={getTotalExpense}
-          onSelectAccount={(id) => setSelectedAccountId(id)}
-          isLoading={isLoading}
-        />
+        {visible && (
+          <AppContent
+            visible={visible}
+            setVisible={setVisible}
+            data={data}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            selectedAccount={selectedAccount}
+            modalState={modalState}
+            setModalState={setModalState}
+            formData={formData}
+            setFormData={setFormData}
+            submitAction={submitAction}
+            getChartData={getChartData}
+            getTotalIncome={getTotalIncome}
+            getTotalExpense={getTotalExpense}
+            onSelectAccount={(id) => setSelectedAccountId(id)}
+            isLoading={isLoading}
+          />
+        )}
+        <CheckViewerNui checkData={standaloneCheckData} isClosing={standaloneCheckClosing} onClose={closeStandaloneUi} />
+        <CheckForgeNui visible={standaloneForgeVisible} isClosing={standaloneForgeClosing} onClose={closeStandaloneUi} />
       </ThemeProvider>
     </LocaleProvider>
   )
@@ -830,7 +934,7 @@ const AppWithATM = () => {
     fetchNui("atmWithdraw", { accountId, amount })
   }
 
-  const handleATMTransfer = (fromId: number, toId: number, amount: number) => {
+  const handleATMTransfer = (fromId: number, toId: string | number, amount: number) => {
     fetchNui("atmTransfer", { fromAccountId: fromId, toAccountId: toId, amount })
   }
 

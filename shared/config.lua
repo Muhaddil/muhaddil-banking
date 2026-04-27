@@ -3,7 +3,7 @@ Config = {}
 Config.FrameWork = "auto"            -- auto, esx, qb
 Config.ESXVer = "new"                -- new, old
 Config.OpenCommand = "banco"         -- Command to open the banking system, set to false to disable
-Config.Locale = 'es'                 -- es, en
+Config.Locale = 'en'                 -- es, en
 Config.AutoVersionChecker = true     -- Enable automatic version checking
 
 Config.DisablePhoneApp = true        -- Disable the phone app, useful if you want to use a custom phone or no phone at all
@@ -195,11 +195,11 @@ Config.Cards = {
 -- Savings Account Settings
 Config.Savings = {
     Enabled = true,
-    MaxPerAccount = 3,           -- Max savings goals per bank account
-    InterestRate = 2.0,          -- 2% interest rate
-    InterestIntervalHours = 720, -- Every 30 days
-    MinDeposit = 100,            -- Minimum deposit amount
-    MaxGoalAmount = 1000000,     -- Maximum goal amount
+    MaxPerAccount = 3,          -- Max savings goals per bank account
+    InterestRate = 1.0,         -- 1% interest rate
+    InterestIntervalHours = 24, -- Every 24 hours
+    MinDeposit = 100,           -- Minimum deposit amount
+    MaxGoalAmount = 1000000,    -- Maximum goal amount
 }
 
 -- Contacts Settings
@@ -223,13 +223,23 @@ Config.Loans.Types = {
 }
 Config.Loans.MaxActiveLoans = 3
 Config.Loans.CreditScore = {
-    Enabled = false, -- Not implemented yet
+    Enabled = true,
     BaseScore = 500,
     MaxScore = 850,
-    PaymentBonus = 10,                     -- Points gained per on-time payment
-    MissedPenalty = 25,                    -- Points lost per missed payment
+    MinScore = 300,
+    PaymentBonus = 10,  -- Points gained per on-time payment
+    MissedPenalty = 25, -- Points lost per missed payment
+    PaidLoanBonus = 20, -- Bonus for fully paying off a loan
+    -- Interest rate multipliers based on credit score
+    ScoreTiers = {
+        { minScore = 750, interestMultiplier = 0.85, label = 'excellent' }, -- -15% interest
+        { minScore = 650, interestMultiplier = 1.00, label = 'good' },      -- Normal interest
+        { minScore = 500, interestMultiplier = 1.10, label = 'fair' },      -- +10% interest
+        { minScore = 300, interestMultiplier = 1.25, label = 'poor' },      -- +25% interest
+    },
+    DenyBelowScore = 350,                                                   -- Deny loans below this score (0 to disable)
 }
-Config.Loans.EarlyRepaymentDiscount = 0.05 -- 5% discount for paying off early
+Config.Loans.EarlyRepaymentDiscount = 0.05                                  -- 5% discount for paying off early
 
 -- Scheduled Transfers Settings
 Config.ScheduledTransfers = {
@@ -237,6 +247,63 @@ Config.ScheduledTransfers = {
     MaxPerPlayer = 10, -- Max scheduled transfers per player
     MinAmount = 50,    -- Minimum transfer amount
     Frequencies = { 'daily', 'weekly', 'biweekly', 'monthly' },
+}
+
+-- IBAN Settings
+Config.IBAN = {
+    Enabled = true,
+    -- Zone prefixes based on locations
+    ZonePrefixes = {
+        bank_legion      = 'LS',  -- Los Santos (Legion Square)
+        bank_del_perro   = 'DPB', -- Del Perro Boulevard
+        bank_hawick      = 'HWK', -- Hawick Avenue
+        bank_alta        = 'ALT', -- Alta Street
+        bank_sandy       = 'SS',  -- Sandy Shores
+        bank_pacific     = 'PS',  -- Pacific Standard
+        bank_great_ocean = 'GOH', -- Great Ocean Highway
+        bank_paleto      = 'PB',  -- Paleto Bay
+    },
+    DefaultPrefix = 'LS',         -- Fallback prefix
+}
+
+-- Checks Settings
+Config.Checks = {
+    Enabled            = true,
+    MaxAmount          = 1000000,                       -- Max check amount
+    MinAmount          = 100,                           -- Min check amount
+    Fee                = 50,                            -- Fee to issue a check ($50)
+    ExpirationDays     = 7,                             -- Days until check expires
+    MaxActiveChecks    = 10,                            -- Max active checks per player
+    ItemName           = 'bank_check',                  -- Inventory item name (needs ox_inventory or similar)
+    UseInventoryItem   = true,                          -- If true, creates an inventory item. If false, uses NUI only.
+
+    AllowForging       = true,                          -- Allow forging checks
+    ForgeLocation      = {                              -- NPC/Location to open forge menu
+        enabled = true,
+        coords = vector3(695.5828, -966.1284, 23.9673), -- Example location
+        useped = true,
+        pedcoords = vector4(695.5828, -966.1284, 23.9673, 88.8138),
+        pedmodel = "g_m_m_chigoon_01",
+        label = "Forger"
+    },
+    ForgeSuccessChance = 65,                     -- % of success when forging (0-100)
+    ForgeCost          = 0,                      -- Cost in $ (0 = no monetary cost)
+    ForgeMaterials     = {
+        { item = 'counterfeit_kit', count = 1 }, -- Forgery kit
+        -- { item = 'paper',           count = 2 }, -- Special paper
+    },
+}
+
+
+-- Direct Debits Settings
+Config.DirectDebits = {
+    Enabled = true,
+    MaxPerPlayer = 15,      -- Max direct debits per player
+    IntervalMinutes = 60,   -- How often to process direct debits (in minutes)
+    NotifyOnPayment = true, -- Notify player when a debit is charged
+    NotifyOnFailure = true, -- Notify player when a debit fails
+    PenaltyOnMiss = false,  -- Apply penalty if debit fails
+    PenaltyRate = 5,        -- % penalty on missed debit
 }
 
 -- Admin Panel Settings

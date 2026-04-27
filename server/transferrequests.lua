@@ -34,12 +34,32 @@ RegisterNetEvent('muhaddil_bank:createTransferRequest', function(data)
         return Notify(src, 'error', Locale('server.transfer_requests_disabled'))
     end
 
-    local targetPlayerId = tonumber(data.targetPlayerId)
+    local targetDataInput = data.targetPlayerId
+    local targetIdentifier = nil
+    local targetPlayerId = nil
+
+    if tonumber(targetDataInput) then
+        targetPlayerId = tonumber(targetDataInput)
+        targetIdentifier = GetPlayerIdentifier(targetPlayerId)
+    else
+        local accountId = exports['muhaddil-banking']:ResolveAccountId(targetDataInput)
+        if accountId then
+            local owner = MySQL.scalar.await('SELECT owner FROM bank_accounts WHERE id = ?', { accountId })
+            if owner then
+                targetIdentifier = owner
+                local targetPlayer = GetPlayerFromIdentifier(owner)
+                if targetPlayer then
+                    targetPlayerId = targetPlayer.source or (targetPlayer.PlayerData and targetPlayer.PlayerData.source)
+                end
+            end
+        end
+    end
+
     local amount = tonumber(data.amount)
     local fromAccountId = tonumber(data.fromAccountId)
     local message = data.message or ''
 
-    if not targetPlayerId or not amount or amount <= 0 or not fromAccountId then
+    if not targetIdentifier or not amount or amount <= 0 or not fromAccountId then
         return Notify(src, 'error', Locale('server.invalid_data'))
     end
 
@@ -49,11 +69,6 @@ RegisterNetEvent('muhaddil_bank:createTransferRequest', function(data)
     )
     if not account then
         return Notify(src, 'error', Locale('server.no_permission_origin'))
-    end
-
-    local targetIdentifier = GetPlayerIdentifier(targetPlayerId)
-    if not targetIdentifier then
-        return Notify(src, 'error', Locale('server.player_not_found'))
     end
 
     if targetIdentifier == identifier then

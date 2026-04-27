@@ -4,7 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { Card } from "./ui/Card"
 import { Button } from "./ui/Button"
-import { Plus, AlertCircle, TrendingDown, Calendar, Percent, X, CheckCircle } from "lucide-react"
+import { Plus, AlertCircle, TrendingDown, Calendar, Percent, X, CheckCircle, Gauge } from "lucide-react"
 import { useLocale } from "../hooks/useLocale"
 
 interface Loan {
@@ -22,9 +22,25 @@ interface LoanManagerProps {
     loans: Loan[]
     onRequestLoan: () => void
     onPayLoan: (loanId: number, amount: number) => void
+    creditScore?: number
+    creditScoreTier?: { minScore: number; interestMultiplier: number; label: string }
 }
 
-export const LoanManager: React.FC<LoanManagerProps> = ({ loans, onRequestLoan, onPayLoan }) => {
+const scoreColors: Record<string, { gradient: string; text: string; bg: string }> = {
+    excellent: { gradient: 'from-green-400 to-emerald-500', text: 'text-green-400', bg: 'bg-green-500/20' },
+    good: { gradient: 'from-blue-400 to-cyan-500', text: 'text-blue-400', bg: 'bg-blue-500/20' },
+    fair: { gradient: 'from-yellow-400 to-orange-500', text: 'text-yellow-400', bg: 'bg-yellow-500/20' },
+    poor: { gradient: 'from-red-400 to-rose-500', text: 'text-red-400', bg: 'bg-red-500/20' },
+}
+
+const scoreLabels: Record<string, string> = {
+    excellent: 'Excelente',
+    good: 'Bueno',
+    fair: 'Regular',
+    poor: 'Bajo',
+}
+
+export const LoanManager: React.FC<LoanManagerProps> = ({ loans, onRequestLoan, onPayLoan, creditScore, creditScoreTier }) => {
     const { t } = useLocale()
     const [paymentModal, setPaymentModal] = useState<{ isOpen: boolean; loan: Loan | null }>({
         isOpen: false,
@@ -59,6 +75,9 @@ export const LoanManager: React.FC<LoanManagerProps> = ({ loans, onRequestLoan, 
         setPaymentAmount(remaining.toString())
     }
 
+    const score = Number(creditScore) || 300
+    const width = Math.min(100, Math.max(5, ((score - 300) / 550) * 100))
+
     return (
         <div className="space-y-6 animate-in">
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[rgb(var(--accent-primary))] to-[rgb(var(--accent-secondary))] p-6 md:p-8 shadow-2xl shadow-[rgba(var(--accent-glow),0.3)]">
@@ -77,6 +96,56 @@ export const LoanManager: React.FC<LoanManagerProps> = ({ loans, onRequestLoan, 
                     </Button>
                 </div>
             </div>
+
+            {creditScore !== undefined && creditScoreTier && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="!p-5 col-span-1 md:col-span-2">
+                        <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-xl ${scoreColors[creditScoreTier.label]?.bg || 'bg-blue-500/20'}`}>
+                                <Gauge className={scoreColors[creditScoreTier.label]?.text || 'text-blue-400'} size={28} />
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div>
+                                        <p className="text-[rgb(var(--text-secondary))] text-xs mb-0.5">{t("loans.creditScore") || "Puntuación Crediticia"}</p>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-3xl font-bold text-white">{creditScore}</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${scoreColors[creditScoreTier.label]?.bg || 'bg-blue-500/20'} ${scoreColors[creditScoreTier.label]?.text || 'text-blue-400'} border-current/30`}>
+                                                {t(`loans.scoreTier.${creditScoreTier.label}`) || scoreLabels[creditScoreTier.label] || creditScoreTier.label}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-[rgb(var(--text-muted))]">{t("loans.maxScore") || "Máx"}: 850</p>
+                                </div>
+                                <div className="h-3 bg-gray-700 rounded-full w-full">
+                                    <div
+                                        className="h-full bg-blue-500 rounded-full"
+                                        style={{ width: `${width}%` }}
+                                    />
+                                </div>
+                                <div className="flex justify-between mt-1">
+                                    <span className="text-xs text-[rgb(var(--text-muted))]">300</span>
+                                    <span className="text-xs text-[rgb(var(--text-muted))]">850</span>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+                    <Card className="!p-5">
+                        <p className="text-[rgb(var(--text-secondary))] text-xs mb-1">{t("loans.interestImpact") || "Impacto en Interés"}</p>
+                        <p className={`text-2xl font-bold ${creditScoreTier.interestMultiplier < 1 ? 'text-green-400' : creditScoreTier.interestMultiplier > 1 ? 'text-red-400' : 'text-white'}`}>
+                            {creditScoreTier.interestMultiplier < 1 ? '-' : creditScoreTier.interestMultiplier > 1 ? '+' : ''}
+                            {Math.abs((1 - creditScoreTier.interestMultiplier) * 100).toFixed(0)}%
+                        </p>
+                        <p className="text-[rgb(var(--text-muted))] text-xs mt-1">
+                            {creditScoreTier.interestMultiplier < 1
+                                ? (t("loans.scoreBenefit") || "Descuento por buen historial")
+                                : creditScoreTier.interestMultiplier > 1
+                                    ? (t("loans.scorePenalty") || "Recargo por historial")
+                                    : (t("loans.scoreNeutral") || "Tasa estándar")}
+                        </p>
+                    </Card>
+                </div>
+            )}
 
             <div className="grid gap-6">
                 {loans.length === 0 ? (

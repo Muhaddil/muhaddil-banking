@@ -112,17 +112,55 @@ Citizen.CreateThread(function()
             end
         end
 
+        if Config.Checks and Config.Checks.AllowForging and Config.Checks.ForgeLocation and Config.Checks.ForgeLocation.enabled then
+            local fl = Config.Checks.ForgeLocation
+            if fl.useped and fl.pedcoords and fl.pedmodel then
+                local distance = #(playerCoords - vector3(fl.pedcoords.x, fl.pedcoords.y, fl.pedcoords.z))
+                if distance < 50.0 and not spawnedPeds['forge_loc'] then
+                    RequestModel(fl.pedmodel)
+                    while not HasModelLoaded(fl.pedmodel) do Wait(1) end
+                    local ped = CreatePed(4, fl.pedmodel, fl.pedcoords.x, fl.pedcoords.y, fl.pedcoords.z - 1.0,
+                        fl.pedcoords.w, false, true)
+                    FreezeEntityPosition(ped, true)
+                    SetEntityInvincible(ped, true)
+                    SetBlockingOfNonTemporaryEvents(ped, true)
+                    spawnedPeds['forge_loc'] = ped
+                    if targetSystem == 'ox_target' then
+                        exports.ox_target:addLocalEntity(ped, {
+                            { name = 'forge_check', icon = 'fas fa-user-secret', label = fl.label, onSelect = function()
+                                TriggerEvent('muhaddil_bank:openForgeMenu') end }
+                        })
+                    elseif targetSystem == 'qb-target' then
+                        exports['qb-target']:AddTargetEntity(ped, {
+                            options = { { icon = 'fas fa-user-secret', label = fl.label, action = function() TriggerEvent(
+                                'muhaddil_bank:openForgeMenu') end } },
+                            distance = 2.5
+                        })
+                    end
+                elseif distance >= 50.0 and spawnedPeds['forge_loc'] then
+                    if targetSystem == 'ox_target' then
+                        exports.ox_target:removeLocalEntity(spawnedPeds['forge_loc'])
+                    elseif targetSystem == 'qb-target' then
+                        exports['qb-target']:RemoveTargetEntity(spawnedPeds['forge_loc'])
+                    end
+                    DeleteEntity(spawnedPeds['forge_loc'])
+                    spawnedPeds['forge_loc'] = nil
+                end
+            end
+        end
+
         Wait(sleep)
     end
 end)
+
+local textUiVisible = false
 
 Citizen.CreateThread(function()
     while true do
         local sleep = 1000
         local playerPed = PlayerPedId()
         local playerCoords = GetEntityCoords(playerPed)
-        local nearBank = false
-        local markerShow = false
+        local nearInteraction = false
 
         for _, bank in pairs(Config.BankLocations) do
             if bank.useped then
@@ -134,15 +172,15 @@ Citizen.CreateThread(function()
 
                 if distance < 15.0 then
                     sleep = 0
-                    nearBank = true
+                    nearInteraction = true
 
                     DrawMarker(27, bank.coords.x, bank.coords.y, bank.coords.z - 0.99, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5,
                         1.5, 0.5, 0, 150, 200, 100, false, false, 2, false, nil, nil, false)
 
                     if distance < 2.0 then
-                        if not markerShow then
+                        if not textUiVisible then
                             lib.showTextUI(Locale('client.open_bank'))
-                            markerShow = true
+                            textUiVisible = true
                         end
                         if IsControlJustReleased(0, 38) then
                             OpenBank(bank.id, bank.name)
@@ -152,9 +190,37 @@ Citizen.CreateThread(function()
             end
         end
 
-        if not nearBank and markerShow == true then
+        if Config.Checks and Config.Checks.AllowForging and Config.Checks.ForgeLocation and Config.Checks.ForgeLocation.enabled then
+            local fl = Config.Checks.ForgeLocation
+            if (not fl.useped) or (fl.useped and not targetSystem) then
+                local interactCoords = fl.useped and vector3(fl.pedcoords.x, fl.pedcoords.y, fl.pedcoords.z) or fl
+                .coords
+                local distance = #(playerCoords - interactCoords)
+
+                if distance < 15.0 then
+                    sleep = 0
+                    nearInteraction = true
+
+                    DrawMarker(27, interactCoords.x, interactCoords.y, interactCoords.z - 0.99, 0.0, 0.0, 0.0, 0.0, 0.0,
+                        0.0,
+                        1.3, 1.3, 0.5, 180, 40, 40, 120, false, false, 2, false, nil, nil, false)
+
+                    if distance < 2.0 then
+                        if not textUiVisible then
+                            lib.showTextUI((fl.label) .. ' [E]')
+                            textUiVisible = true
+                        end
+                        if IsControlJustReleased(0, 38) then
+                            TriggerEvent('muhaddil_bank:openForgeMenu')
+                        end
+                    end
+                end
+            end
+        end
+
+        if not nearInteraction and textUiVisible == true then
             lib.hideTextUI()
-            markerShow = false
+            textUiVisible = false
         end
 
         Wait(sleep)
@@ -181,7 +247,12 @@ function OpenBank(bankId, bankName)
         currentBankId = bankId,
         currentBankType = currentBankType,
         commissionRate = commissionRate,
-        bankManagementEnabled = bankManagementEnabled
+        bankManagementEnabled = bankManagementEnabled,
+        directDebitsEnabled = Config.DirectDebits.Enabled,
+        checksEnabled = Config.Checks.Enabled,
+        scheduleChecksEnabled = Config.Checks.Enabled,
+        transferRequestsEnabled = Config.TransferRequests.Enabled,
+        contactsEnabled = Config.Contacts.Enabled,
     })
     SendNUIMessage({
         action = 'setVisible',
@@ -414,6 +485,85 @@ RegisterNUICallback('adminCancelRequest', function(data, cb)
     cb('ok')
 end)
 
+RegisterNUICallback('createCheck', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:createCheck', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('cashCheck', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:cashCheck', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('cashCheckItem', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:cashCheckItem', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('cancelCheck', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:cancelCheck', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('forgeCheck', function(data, cb)
+    cb('ok')
+
+    CreateThread(function()
+        local completed = lib.progressBar({
+            duration = 8000,
+            label = Locale('client.forge_progress') or 'Forjando cheque...',
+            useWhileDead = false,
+            canCancel = true,
+            disable = {
+                move = true,
+                car = true,
+                combat = true,
+                mouse = false,
+            },
+            anim = {
+                dict = 'amb@prop_human_bum_bin@idle_b',
+                clip = 'idle_d',
+            }
+        })
+
+        if not completed then
+            return lib.notify({
+                type = 'error',
+                description = Locale('client.forge_cancelled') or 'Has cancelado la falsificación'
+            })
+        end
+
+        TriggerServerEvent('muhaddil_bank:forgeCheck', data)
+    end)
+end)
+
+RegisterNUICallback('getInventoryChecks', function(data, cb)
+    local result = lib.callback.await('muhaddil_bank:getInventoryChecks', false)
+    cb(result or {})
+end)
+
+RegisterNUICallback('toggleDirectDebit', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:toggleDirectDebit', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('cancelDirectDebit', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:cancelDirectDebit', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('changeDebitAccount', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:changeDebitAccount', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('copyToClipboard', function(data, cb)
+    if data.text then
+        lib.setClipboard(data.text)
+    end
+    cb('ok')
+end)
+
 RegisterNetEvent('muhaddil_bank:refreshData', function()
     if not isOpen then return end
 
@@ -433,7 +583,12 @@ RegisterNetEvent('muhaddil_bank:refreshData', function()
         currentBankId = currentBankLocation,
         currentBankType = currentBankType,
         commissionRate = commissionRate,
-        bankManagementEnabled = bankManagementEnabled
+        bankManagementEnabled = bankManagementEnabled,
+        directDebitsEnabled = Config.DirectDebits.Enabled,
+        checksEnabled = Config.Checks.Enabled,
+        scheduleChecksEnabled = Config.Checks.Enabled,
+        transferRequestsEnabled = Config.TransferRequests.Enabled,
+        contactsEnabled = Config.Contacts.Enabled,
     })
 
     if not Config.DisablePhoneApp and GetResourceState("lb-phone") == "started" then

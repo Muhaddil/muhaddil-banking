@@ -199,6 +199,57 @@ MySQL.ready(function()
                 INDEX(`enabled`),
                 INDEX(`next_execution`)
             )
+        ]],
+        [[
+            CREATE TABLE IF NOT EXISTS `bank_checks` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `check_code` VARCHAR(20) NOT NULL UNIQUE,
+                `issuer` VARCHAR(50) NOT NULL,
+                `from_account_id` INT NOT NULL,
+                `amount` DECIMAL(20,2) NOT NULL,
+                `memo` VARCHAR(200) DEFAULT NULL,
+                `status` VARCHAR(20) DEFAULT 'active',
+                `expires_at` TIMESTAMP NOT NULL,
+                `cashed_by` VARCHAR(50) DEFAULT NULL,
+                `cashed_account_id` INT DEFAULT NULL,
+                `cashed_at` TIMESTAMP NULL DEFAULT NULL,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX(`issuer`),
+                INDEX(`check_code`),
+                INDEX(`status`)
+            )
+        ]],
+        [[
+            CREATE TABLE IF NOT EXISTS `bank_direct_debits` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `owner` VARCHAR(50) NOT NULL,
+                `account_id` INT NOT NULL,
+                `creditor_name` VARCHAR(100) NOT NULL,
+                `description` VARCHAR(200) DEFAULT NULL,
+                `amount` DECIMAL(20,2) NOT NULL,
+                `frequency` VARCHAR(20) DEFAULT 'monthly',
+                `enabled` TINYINT(1) DEFAULT 1,
+                `last_executed` TIMESTAMP NULL DEFAULT NULL,
+                `next_execution` TIMESTAMP NULL DEFAULT NULL,
+                `source_resource` VARCHAR(100) DEFAULT NULL,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (`account_id`) REFERENCES `bank_accounts`(`id`) ON DELETE CASCADE,
+                INDEX(`owner`),
+                INDEX(`enabled`),
+                INDEX(`next_execution`)
+            )
+        ]],
+        [[
+            CREATE TABLE IF NOT EXISTS `bank_check_forgery_log` (
+                `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `identifier` VARCHAR(100) NOT NULL,
+                `check_code` VARCHAR(50) NOT NULL,
+                `amount` DECIMAL(15,2) NOT NULL DEFAULT 0,
+                `detected_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                INDEX `idx_identifier` (`identifier`),
+                INDEX `idx_check_code` (`check_code`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ]]
     }
 
@@ -249,6 +300,45 @@ MySQL.ready(function()
         MySQL.query.await("ALTER TABLE bank_loans ADD COLUMN paid_installments INT DEFAULT 0")
         MySQL.query.await("ALTER TABLE bank_loans ADD COLUMN next_payment_date TIMESTAMP NULL DEFAULT NULL")
         MySQL.query.await("ALTER TABLE bank_loans ADD COLUMN credit_score_snapshot INT DEFAULT 500")
+    end
+
+    local hasIssuerName = MySQL.scalar.await([[
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'bank_checks'
+      AND COLUMN_NAME = 'issuer_name'
+]])
+
+    if tonumber(hasIssuerName) == 0 then
+        MySQL.query.await([[
+        ALTER TABLE bank_checks
+        ADD COLUMN issuer_name VARCHAR(100) DEFAULT NULL
+    ]])
+    end
+
+    if Config.IBAN and Config.IBAN.Enabled then
+        local hasIban = MySQL.scalar.await([[
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'bank_accounts'
+              AND COLUMN_NAME = 'iban'
+        ]])
+
+        if tonumber(hasIban) == 0 then
+            MySQL.query.await('ALTER TABLE bank_accounts ADD COLUMN iban VARCHAR(15) DEFAULT NULL')
+            MySQL.query.await('ALTER TABLE bank_accounts ADD UNIQUE KEY iban_unique (iban)')
+        end
+
+        local accountsWithoutIban = MySQL.query.await('SELECT id FROM bank_accounts WHERE iban IS NULL')
+        if accountsWithoutIban and #accountsWithoutIban > 0 then
+            for _, acc in ipairs(accountsWithoutIban) do
+                local iban = GenerateIBAN(nil)
+                MySQL.query.await('UPDATE bank_accounts SET iban = ? WHERE id = ?', { iban, acc.id })
+            end
+            print(string.format('^3[Bank System] Generated IBANs for %d existing accounts^7', #accountsWithoutIban))
+        end
     end
 
     print('^2[Bank System] Database initialized successfully^7')
@@ -480,7 +570,7 @@ function IsPlayerAtHisBank(src, bankId)
     local dx = playerCoords.x - bankCoords.x
     local dy = playerCoords.y - bankCoords.y
     local dz = playerCoords.z - bankCoords.z
-    local distSq = dx*dx + dy*dy + dz*dz
+    local distSq = dx * dx + dy * dy + dz * dz
 
     if distSq <= (BANK_INTERACTION_RADIUS * BANK_INTERACTION_RADIUS) then
         return true, nil
@@ -490,22 +580,33 @@ function IsPlayerAtHisBank(src, bankId)
 end
 
 function buildCronExpression(intervalHours)
+    intervalHours = tonumber(intervalHours)
+
+    if not intervalHours or intervalHours <= 0 then
+        intervalHours = 1
+    end
+
+    local totalMinutes = math.floor(intervalHours * 60 + 0.5)
+
+    if intervalHours < 1 then
+        local minutes = math.max(1, totalMinutes)
+        return string.format("*/%d * * * *", minutes)
+    end
+
     if intervalHours == 1 then
         return '0 * * * *'
     elseif intervalHours == 24 then
         return '0 0 * * *'
+    elseif intervalHours == 168 then
+        return '0 0 * * 1' -- weekly
+    elseif intervalHours == 720 then
+        return '0 0 1 * *' -- monthly
     elseif intervalHours < 24 and (24 % intervalHours == 0) then
         return string.format('0 */%d * * *', intervalHours)
-    elseif intervalHours == 48 then
-        return '0 0 */2 * *'
-    elseif intervalHours == 168 then
-        return '0 0 * * 1'
+    elseif intervalHours % 24 == 0 then
+        local days = math.floor(intervalHours / 24)
+        return string.format('0 0 */%d * *', days)
     else
-        local hours = intervalHours % 24
-        if hours == 0 then
-            local days = math.floor(intervalHours / 24)
-            return string.format('0 0 */%d * *', days)
-        end
         return string.format('0 */%d * * *', intervalHours)
     end
 end
@@ -517,6 +618,8 @@ function GetPlayerCreditScore(identifier)
 
     local baseScore = Config.Loans.CreditScore.BaseScore
     local maxScore = Config.Loans.CreditScore.MaxScore
+    local minScore = Config.Loans.CreditScore.MinScore or 300
+    local paidLoanBonus = Config.Loans.CreditScore.PaidLoanBonus or 20
 
     local paidLoans = MySQL.scalar.await([[
         SELECT COUNT(*) FROM bank_loans
@@ -537,10 +640,90 @@ function GetPlayerCreditScore(identifier)
 
     local score = baseScore
         + (tonumber(paidPayments) * Config.Loans.CreditScore.PaymentBonus)
-        + (tonumber(paidLoans) * 20)
+        + (tonumber(paidLoans) * paidLoanBonus)
         - (tonumber(penalties) * Config.Loans.CreditScore.MissedPenalty)
 
-    return math.max(300, math.min(maxScore, score))
+    return math.max(minScore, math.min(maxScore, score))
+end
+
+function GetCreditScoreTier(score)
+    if not Config.Loans.CreditScore or not Config.Loans.CreditScore.ScoreTiers then
+        return { minScore = 0, interestMultiplier = 1.0, label = 'good' }
+    end
+
+    for _, tier in ipairs(Config.Loans.CreditScore.ScoreTiers) do
+        if score >= tier.minScore then
+            return tier
+        end
+    end
+
+    return Config.Loans.CreditScore.ScoreTiers[#Config.Loans.CreditScore.ScoreTiers]
+end
+
+---@param bankId string|nil The bank location ID (e.g., 'bank_legion')
+---@return string The generated IBAN (e.g., 'LS-4821-7390')
+function GenerateIBAN(bankId)
+    local prefix = Config.IBAN.DefaultPrefix
+    if bankId and Config.IBAN.ZonePrefixes[bankId] then
+        prefix = Config.IBAN.ZonePrefixes[bankId]
+    end
+
+    local function genBlock()
+        return string.format('%04d', math.random(1000, 9999))
+    end
+
+    local iban = prefix .. '-' .. genBlock() .. '-' .. genBlock()
+
+    local exists = MySQL.scalar.await('SELECT COUNT(*) FROM bank_accounts WHERE iban = ?', { iban })
+    if exists and tonumber(exists) > 0 then
+        return GenerateIBAN(bankId)
+    end
+
+    return iban
+end
+
+---@param input string|number IBAN string or account ID number
+---@return number|nil accountId
+function ResolveAccountId(input)
+    if type(input) == 'number' then
+        return input
+    end
+
+    local str = tostring(input)
+    if tonumber(str) then
+        return tonumber(str)
+    end
+
+    if Config.IBAN and Config.IBAN.Enabled then
+        local accountId = MySQL.scalar.await('SELECT id FROM bank_accounts WHERE iban = ?', { str:upper() })
+        if accountId then
+            return tonumber(accountId)
+        end
+    end
+
+    return nil
+end
+
+---@return string The check code (e.g., 'CHK-A3F9-B2C1')
+function GenerateCheckCode()
+    local chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    local function randBlock(len)
+        local block = ''
+        for i = 1, len do
+            local idx = math.random(1, #chars)
+            block = block .. chars:sub(idx, idx)
+        end
+        return block
+    end
+
+    local code = 'CHK-' .. randBlock(4) .. '-' .. randBlock(4)
+
+    local exists = MySQL.scalar.await('SELECT COUNT(*) FROM bank_checks WHERE check_code = ?', { code })
+    if exists and tonumber(exists) > 0 then
+        return GenerateCheckCode()
+    end
+
+    return code
 end
 
 function CalculateNextExecution(frequency, dayOfWeek, hour, minute)
@@ -631,6 +814,36 @@ function CalculateNextExecution(frequency, dayOfWeek, hour, minute)
     return os.date('%Y-%m-%d %H:%M:%S', nextExec)
 end
 
+function BuildCheckMetadata(checkCode, amount, memo, issuerName, fromAccountId, expiresAt, isFake)
+    return {
+        check_code   = checkCode,
+        amount       = amount,
+        memo         = memo or '',
+        issuer_name  = issuerName or 'Desconocido',
+        from_account = fromAccountId,
+        expires_at   = expiresAt,
+        is_fake      = isFake or false,
+        label        = string.format(Locale('server.check_label', checkCode, amount)),
+        description  = string.format(
+            Locale('server.check_metadata', issuerName or 'Desconocido', amount, memo or 'Sin concepto', expiresAt)
+        ),
+    }
+end
+
+function GetPlayerDisplayName(src)
+    if FrameWork == 'esx' and ESX then
+        local xPlayer = ESX.GetPlayerFromId(src)
+        return xPlayer and xPlayer.name
+    elseif FrameWork == 'qb' and QBCore then
+        local Player = QBCore.Functions.GetPlayer(src)
+        if Player then
+            local ci = Player.PlayerData.charinfo
+            return string.format('%s %s', ci.firstname or '', ci.lastname or ''):gsub('^%s+', ''):gsub('%s+$', '')
+        end
+    end
+    return ((Locale('server.player') or 'Jugador ') .. src)
+end
+
 -- exports('GetPlayer', GetPlayer)
 -- exports('GetPlayerIdentifier', GetPlayerIdentifier)
 -- exports('GetPlayerMoney', GetPlayerMoney)
@@ -644,4 +857,8 @@ exports('GenerateCardNumber', GenerateCardNumber)
 exports('GetBankCoords', GetBankCoords)
 exports('IsPlayerAtHisBank', IsPlayerAtHisBank)
 exports('GetPlayerCreditScore', GetPlayerCreditScore)
+exports('GetCreditScoreTier', GetCreditScoreTier)
 exports('CalculateNextExecution', CalculateNextExecution)
+exports('GenerateIBAN', GenerateIBAN)
+exports('ResolveAccountId', ResolveAccountId)
+exports('GenerateCheckCode', GenerateCheckCode)

@@ -93,7 +93,7 @@ export const ScheduledTransfers: React.FC<ScheduledTransfersProps> = ({
         if (!fromAccountId || !toAccountId || !amount) return
         onCreateTransfer({
             fromAccountId,
-            toAccountId: parseInt(toAccountId),
+            toAccountId: toAccountId,
             amount: parseFloat(amount),
             frequency,
             dayOfWeek,
@@ -266,7 +266,7 @@ export const ScheduledTransfers: React.FC<ScheduledTransfersProps> = ({
                                     </div>
                                     <div>
                                         <label className="text-sm text-[rgb(var(--text-secondary))] mb-1 block">{t("scheduledTransfers.toAccountId")}</label>
-                                        <input type="number" value={toAccountId} onChange={e => setToAccountId(e.target.value)}
+                                        <input type="text" value={toAccountId} onChange={e => setToAccountId(e.target.value)}
                                             placeholder={t("scheduledTransfers.toAccountPlaceholder")}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white" />
                                     </div>

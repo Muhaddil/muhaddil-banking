@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { LayoutDashboard, CreditCard, History, Banknote, Building2, LogOut, PiggyBank, Users, ArrowLeftRight, Repeat, Shield } from "lucide-react"
+import { LayoutDashboard, CreditCard, History, Banknote, Building2, LogOut, PiggyBank, Users, ArrowLeftRight, Repeat, Shield, FileText, Receipt } from "lucide-react"
 import { ThemeSwitcher } from "./ThemeSwitcher"
 import { useLocale } from "../hooks/useLocale"
 
@@ -12,10 +12,15 @@ interface SidebarProps {
     currentBank?: string
     currentBankType?: string
     bankManagementEnabled?: boolean
+    directDebitsEnabled?: boolean
+    checksEnabled?: boolean
+    scheduleChecksEnabled?: boolean
+    transferRequestsEnabled?: boolean
+    contactsEnabled?: boolean
     isAdmin?: boolean
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onClose, currentBank, currentBankType, bankManagementEnabled, isAdmin }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onClose, currentBank, currentBankType, bankManagementEnabled, directDebitsEnabled, checksEnabled, scheduleChecksEnabled, transferRequestsEnabled, contactsEnabled, isAdmin }) => {
     const { t } = useLocale()
 
     const bankTitle = currentBank && currentBank.trim() ? currentBank : t("sidebar.bankName")
@@ -34,10 +39,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onClo
         { id: "transactions", label: t("sidebar.transactions"), icon: <History size={20} /> },
         { id: "loans", label: t("sidebar.loans"), icon: <Banknote size={20} /> },
         { id: "savings", label: t("sidebar.savings"), icon: <PiggyBank size={20} /> },
-        { id: "contacts", label: t("sidebar.contacts"), icon: <Users size={20} /> },
-        { id: "requests", label: t("sidebar.requests"), icon: <ArrowLeftRight size={20} /> },
         { id: "scheduled", label: t("sidebar.scheduled"), icon: <Repeat size={20} /> },
+        ...(checksEnabled ? [{ id: "checks", label: t("sidebar.checks") || "Cheques", icon: <FileText size={20} /> }] : []),
+        ...(directDebitsEnabled
+            ? [{ id: "directdebits", label: t("sidebar.directDebits") || "Domiciliaciones", icon: <Receipt size={20} /> }]
+            : []),
         { id: "stats", label: t("sidebar.stats"), icon: <LayoutDashboard size={20} /> },
+        ...(transferRequestsEnabled
+            ? [{ id: "requests", label: t("sidebar.requests") || "Solicitudes", icon: <ArrowLeftRight size={20} /> }]
+            : []),
+        ...(contactsEnabled
+            ? [{ id: "contacts", label: t("sidebar.contacts") || "Contactos", icon: <Users size={20} /> }]
+            : []),
         ...(bankManagementEnabled
             ? [{ id: "banks", label: t("sidebar.banks"), icon: <Building2 size={20} /> }]
             : []),
@@ -47,8 +60,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onClo
     ]
 
     return (
-        <div className="w-72 glass-panel m-4 rounded-2xl flex flex-col border-r-0">
-            <div className="p-6 md:p-8">
+        <div className="w-72 glass-panel m-4 rounded-2xl flex flex-col border-r-0 overflow-hidden">
+            <div className="p-6 md:p-8 flex flex-col flex-1 min-h-0">
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[rgb(var(--accent-primary))] to-[rgb(var(--accent-secondary))] flex items-center justify-center shadow-lg shadow-[rgba(var(--accent-glow),0.3)]">
@@ -64,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onClo
                     <ThemeSwitcher />
                 </div>
 
-                <nav className="space-y-2">
+                <nav className="space-y-2 flex-1 overflow-y-auto min-h-0 pr-2 -mr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                     {menuItems.map((item) => (
                         <button
                             key={item.id}

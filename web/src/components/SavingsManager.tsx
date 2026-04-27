@@ -81,8 +81,10 @@ export const SavingsManager: React.FC<SavingsManagerProps> = ({
     }
 
     const getProgress = (current: string, goal: string) => {
-        const c = parseFloat(current) || 0
-        const g = parseFloat(goal) || 1
+        const c = Number(current)
+        const g = Number(goal)
+
+        if (!g || g <= 0) return 0
         return Math.min(100, (c / g) * 100)
     }
 
@@ -140,14 +142,21 @@ export const SavingsManager: React.FC<SavingsManagerProps> = ({
                                         <span className="text-[rgb(var(--text-secondary))]">{t("savings.progress")}</span>
                                         <span className="text-white font-medium">{progress.toFixed(1)}%</span>
                                     </div>
-                                    <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+                                    <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden">
                                         <div
-                                            className="h-full rounded-full bg-gradient-to-r from-[rgb(var(--accent-primary))] to-[rgb(var(--accent-secondary))] transition-all duration-500"
-                                            style={{ width: `${progress}%` }}
+                                            className="h-full transition-all duration-500 rounded-full"
+                                            style={{
+                                                width: `${progress}%`,
+                                                background: `linear-gradient(
+                                                    to right,
+                                                    rgb(var(--accent-primary)),
+                                                    rgb(var(--accent-secondary))
+                                                )`,
+                                                boxShadow: "0 0 6px rgba(0,0,0,0.3)"
+                                            }}
                                         />
                                     </div>
                                 </div>
-
                                 <div className="flex items-center justify-between mb-4">
                                     <div>
                                         <p className="text-xs text-[rgb(var(--text-secondary))]">{t("savings.current")}</p>

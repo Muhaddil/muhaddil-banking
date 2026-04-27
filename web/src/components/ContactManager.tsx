@@ -11,7 +11,7 @@ interface Contact {
     id: number
     owner: string
     contact_name: string
-    contact_account_id: number
+    contact_account_id: string
     contact_account_name?: string
     notes: string | null
     created_at: string
@@ -25,10 +25,10 @@ interface ContactsConfig {
 interface ContactManagerProps {
     contacts: Contact[]
     config: ContactsConfig
-    onAddContact: (data: { contactName: string; contactAccountId: number; notes: string }) => void
+    onAddContact: (data: { contactName: string; contactAccountId: string; notes: string }) => void
     onUpdateContact: (data: { contactId: number; contactName: string; notes: string }) => void
     onRemoveContact: (contactId: number) => void
-    onQuickTransfer?: (accountId: number) => void
+    onQuickTransfer?: (accountId: string) => void
 }
 
 export const ContactManager: React.FC<ContactManagerProps> = ({
@@ -49,7 +49,7 @@ export const ContactManager: React.FC<ContactManagerProps> = ({
 
     const handleAdd = () => {
         if (!contactName || !contactAccountId) return
-        onAddContact({ contactName, contactAccountId: parseInt(contactAccountId), notes })
+        onAddContact({ contactName, contactAccountId, notes })
         setShowAddModal(false)
         setContactName("")
         setContactAccountId("")
@@ -160,7 +160,7 @@ export const ContactManager: React.FC<ContactManagerProps> = ({
                             </div>
                             <div>
                                 <label className="text-sm text-[rgb(var(--text-secondary))] mb-1 block">{t("contacts.accountId")}</label>
-                                <input type="number" value={contactAccountId} onChange={e => setContactAccountId(e.target.value)}
+                                <input type="text" value={contactAccountId} onChange={e => setContactAccountId(e.target.value)}
                                     placeholder="12345"
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white" />
                             </div>
