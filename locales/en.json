@@ -466,7 +466,8 @@
     "deposit_to_savings": "Deposit to savings: {0} - ${1}",
     "withdraw_from_savings": "Withdraw from savings: {0} - ${1}",
     "savings_close": "Savings close: {0} - ${1}",
-    "savings_interest": "Savings interest: {0} - ${1}"
+    "savings_interest": "Savings interest: {0} - ${1}",
+    "check_forged": "Check forged successfully. Use with caution."
   },
   "client": {
     "bank_connection_error": "Error connecting to bank",
