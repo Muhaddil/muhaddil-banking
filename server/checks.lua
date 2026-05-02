@@ -352,7 +352,7 @@ RegisterNetEvent('muhaddil_bank:forgeCheck', function(data)
     local expiresAt  = data.expiresAt
 
     if not checkCode or not amount or not expiresAt then
-        return Notify(src, 'error', 'Faltan datos para falsificar el cheque')
+        return Notify(src, 'error', Locale('server.check_forge_no_data'))
     end
 
     if Config.Checks.ForgeMaterials and #Config.Checks.ForgeMaterials > 0 then
@@ -366,9 +366,7 @@ RegisterNetEvent('muhaddil_bank:forgeCheck', function(data)
         end
 
         if not hasMaterials then
-            return Notify(src, 'error',
-                Locale('server.check_forge_no_materials') or
-                'No tienes los materiales necesarios para falsificar el cheque')
+            return Notify(src, 'error', Locale('server.check_forge_no_materials'))
         end
 
         for _, mat in ipairs(Config.Checks.ForgeMaterials) do
@@ -381,12 +379,10 @@ RegisterNetEvent('muhaddil_bank:forgeCheck', function(data)
 
     if roll > successChance then
         Notify(src, 'error',
-            Locale('server.check_forge_failed') or
-            '❌ La falsificación ha fallado. Los materiales se han perdido.')
+            Locale('server.check_forge_failed'))
 
-        print(string.format(
-            '^3[Bank] Intento de falsificación fallido. Jugador: %s | Código intentado: %s^7',
-            GetPlayerName(src), checkCode
+        print(Locale('server.check_forge_failed_print',
+            GetPlayerName(src), checkCode, amount
         ))
         return
     end
@@ -394,11 +390,8 @@ RegisterNetEvent('muhaddil_bank:forgeCheck', function(data)
     local fakeMeta       = BuildCheckMetadata(
         checkCode, amount, memo, issuerName, 0, expiresAt, true
     )
-    fakeMeta.label       = string.format('Cheque %s — $%s', checkCode, amount)
-    fakeMeta.description = string.format(
-        'Firmado por: %s\nMonto: $%s\nConcepto: %s\nExpira: %s',
-        issuerName, amount, memo, expiresAt
-    )
+    fakeMeta.label       = Locale('server.check_item_title', checkCode, amount)
+    fakeMeta.description = Locale('server.check_item_description', issuerName, amount, memo, expiresAt)
 
     local added          = exports.ox_inventory:AddItem(src, Config.Checks.ItemName, 1, fakeMeta)
     if not added then
@@ -488,7 +481,7 @@ Citizen.CreateThread(function()
             ]], {
                 check.from_account_id,
                 amount,
-                'Cheque expirado y reembolsado: ' .. check.check_code
+                Locale('server.check_expirated_transaction', check.check_code, amount)
             })
 
             local issuerData = GetPlayerFromIdentifier(check.issuer)

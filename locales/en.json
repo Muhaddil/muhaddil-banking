@@ -468,7 +468,12 @@
     "savings_close": "Savings close: {0} - ${1}",
     "savings_interest": "Savings interest: {0} - ${1}",
     "check_forged": "Check forged successfully. Use with caution.",
-    "check_forged_print": "^3[Bank] Check forged. Player: {0} - | Code: {1} | Amount: ${2}"
+    "check_forged_print": "^3[Bank] Check forged. Player: {0} - | Code: {1} | Amount: ${2}",
+    "check_expirated_transaction": "Check expired and refunded: {0}, ${1}",
+    "check_item_title": "Check {0} — ${1}",
+    "check_item_description": "Signed by: {0}\nAmount: ${1}\nConcept: {2}\nExpires: {3}",
+    "check_forge_failed_print": "^3[Bank] Check forging failed. Player: {0} | Code: {1} | Amount: ${2}",
+    "check_forge_no_data": "There is insufficient information to forge the check"
   },
   "client": {
     "bank_connection_error": "Error connecting to bank",

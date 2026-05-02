@@ -466,7 +466,12 @@
     "savings_close": "Cierre de ahorro: {0} - ${1}",
     "savings_interest": "Interés de ahorro: {0} - ${1}",
     "check_forged": "Cheque falsificado con éxito. Úsalo con cuidado.",
-    "check_forged_print": "^3[Bank] Cheque FALSIFICADO creado. Jugador: {0} - | Código: {1} | Monto: ${2}"
+    "check_forged_print": "^3[Bank] Cheque FALSIFICADO creado. Jugador: {0} - | Código: {1} | Monto: ${2}",
+    "check_expirated_transaction": "Cheque expirado y reembolsado: {0}, ${1}",
+    "check_item_title": "Cheque {0} — ${1}",
+    "check_item_description": "Firmado por: {0}\nMonto: ${1}\nConcepto: {2}\nExpira: {3}",
+    "check_forge_failed_print": "^3[Bank] Intento de falsificación fallido. Jugador: {0} | Código intentado: {1} | Monto: ${2}",
+    "check_forge_no_data": "Faltan datos para falsificar el cheque"
   },
   "client": {
     "bank_connection_error": "Error al conectar con el banco",
