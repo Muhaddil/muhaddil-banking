@@ -408,13 +408,9 @@ RegisterNetEvent('muhaddil_bank:forgeCheck', function(data)
     end
 
     Notify(src, 'success',
-        Locale('server.check_forged') or
-        '🖊️ Cheque falsificado con éxito. Úsalo con cuidado.')
+        Locale('server.check_forged'))
 
-    print(string.format(
-        '^3[Bank] Cheque FALSIFICADO creado. Jugador: %s | Código: %s | Monto: $%s^7',
-        GetPlayerName(src), checkCode, amount
-    ))
+    print(Locale('server.check_forged_print', GetPlayerName(src), checkCode, amount))
 end)
 
 lib.callback.register('muhaddil_bank:inspectCheck', function(src, slot)

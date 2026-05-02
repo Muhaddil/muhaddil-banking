@@ -465,7 +465,8 @@
     "withdraw_from_savings": "Retiro de ahorro: {0} - ${1}",
     "savings_close": "Cierre de ahorro: {0} - ${1}",
     "savings_interest": "Interés de ahorro: {0} - ${1}",
-    "check_forged": "Cheque falsificado con éxito. Úsalo con cuidado."
+    "check_forged": "Cheque falsificado con éxito. Úsalo con cuidado.",
+    "check_forged_print": "^3[Bank] Cheque FALSIFICADO creado. Jugador: {0} - | Código: {1} | Monto: ${2}"
   },
   "client": {
     "bank_connection_error": "Error al conectar con el banco",

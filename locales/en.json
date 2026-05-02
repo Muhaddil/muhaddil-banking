@@ -467,7 +467,8 @@
     "withdraw_from_savings": "Withdraw from savings: {0} - ${1}",
     "savings_close": "Savings close: {0} - ${1}",
     "savings_interest": "Savings interest: {0} - ${1}",
-    "check_forged": "Check forged successfully. Use with caution."
+    "check_forged": "Check forged successfully. Use with caution.",
+    "check_forged_print": "^3[Bank] Check forged. Player: {0} - | Code: {1} | Amount: ${2}"
   },
   "client": {
     "bank_connection_error": "Error connecting to bank",
