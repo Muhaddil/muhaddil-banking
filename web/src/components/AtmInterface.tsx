@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { DollarSign, ArrowDownCircle, ArrowUpCircle, CreditCard, Loader2, ArrowLeftRight, Landmark, X, ChevronRight } from "lucide-react"
+import { DollarSign, ArrowDownCircle, ArrowUpCircle, CreditCard, Loader2, ArrowLeft, ArrowLeftRight, Landmark, X, ChevronRight } from "lucide-react"
 import { useLocale } from "../hooks/useLocale"
 
 interface Account {
@@ -550,7 +550,7 @@ export const AtmInterface: React.FC<AtmInterfaceProps> = ({
                                     onClick={handleBack}
                                     className="p-2 hover:bg-white/10 rounded-lg transition-all"
                                 >
-                                    <X size={20} className="text-white" />
+                                    <ArrowLeft size={20} className="text-white" />
                                 </button>
                             )}
                             <div className="flex items-center gap-3">

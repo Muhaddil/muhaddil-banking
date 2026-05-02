@@ -263,6 +263,7 @@ RegisterNetEvent('muhaddil_bank:renameBank', function(bankId, newName)
 
     Notify(src, 'success', Locale('server.bank_renamed', newName))
     TriggerClientEvent('muhaddil_bank:refreshData', src)
+    TriggerClientEvent('muhaddil_bank:refreshBlips', -1)
 end)
 
 lib.callback.register('muhaddil_bank:getBankReport', function(source, bankId)
@@ -350,6 +351,7 @@ exports('SellBank', function(source, bankId)
     )
 
     AddPlayerMoney(source, total)
+    TriggerClientEvent('muhaddil_bank:refreshBlips', -1)
 
     return true, {
         bankName = bank.bank_name,

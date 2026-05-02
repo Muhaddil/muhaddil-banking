@@ -1,6 +1,14 @@
+local bankBlips = {}
+
 function CreateBlips()
+    local bankNames = lib.callback.await('muhaddil_bank:getBankNames', false) or {}
+
     for _, bank in pairs(Config.BankLocations) do
         if bank.blip then
+            if bankBlips[bank.id] then
+                RemoveBlip(bankBlips[bank.id])
+            end
+
             local blip = AddBlipForCoord(bank.coords.x, bank.coords.y, bank.coords.z)
             SetBlipSprite(blip, Config.Blip.Sprite)
             SetBlipDisplay(blip, 4)
@@ -8,8 +16,10 @@ function CreateBlips()
             SetBlipColour(blip, Config.Blip.Color)
             SetBlipAsShortRange(blip, true)
             BeginTextCommandSetBlipName("STRING")
-            AddTextComponentString(bank.name)
+            AddTextComponentString(bankNames[bank.id] or bank.name)
             EndTextCommandSetBlipName(blip)
+            
+            bankBlips[bank.id] = blip
         end
     end
 end

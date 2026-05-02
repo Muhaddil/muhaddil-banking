@@ -74,31 +74,33 @@ Citizen.CreateThread(function()
 
                     spawnedPeds[bank.id] = ped
 
-                    if targetSystem == 'ox_target' then
-                        exports.ox_target:addLocalEntity(ped, {
-                            {
-                                name = 'bank_' .. bank.id,
-                                icon = 'fas fa-university',
-                                label = Locale('client.open', bank.name),
-                                onSelect = function()
-                                    OpenBank(bank.id, bank.name)
-                                end
-                            }
-                        })
-                    elseif targetSystem == 'qb-target' then
-                        exports['qb-target']:AddTargetEntity(ped, {
-                            options = {
+                    lib.callback('muhaddil_bank:getBankName', false, function(realName)
+                        if targetSystem == 'ox_target' then
+                            exports.ox_target:addLocalEntity(ped, {
                                 {
+                                    name = 'bank_' .. bank.id,
                                     icon = 'fas fa-university',
-                                    label = Locale('client.open', bank.name),
-                                    action = function()
-                                        OpenBank(bank.id, bank.name)
+                                    label = Locale('client.open', realName),
+                                    onSelect = function()
+                                        OpenBank(bank.id, realName)
                                     end
                                 }
-                            },
-                            distance = 2.5
-                        })
-                    end
+                            })
+                        elseif targetSystem == 'qb-target' then
+                            exports['qb-target']:AddTargetEntity(ped, {
+                                options = {
+                                    {
+                                        icon = 'fas fa-university',
+                                        label = Locale('client.open', realName),
+                                        action = function()
+                                            OpenBank(bank.id, realName)
+                                        end
+                                    }
+                                },
+                                distance = 2.5
+                            })
+                        end
+                    end, bank.id)
                 elseif distance >= 50.0 and spawnedPeds[bank.id] then
                     if targetSystem == 'ox_target' then
                         exports.ox_target:removeLocalEntity(spawnedPeds[bank.id])
@@ -127,13 +129,25 @@ Citizen.CreateThread(function()
                     spawnedPeds['forge_loc'] = ped
                     if targetSystem == 'ox_target' then
                         exports.ox_target:addLocalEntity(ped, {
-                            { name = 'forge_check', icon = 'fas fa-user-secret', label = fl.label, onSelect = function()
-                                TriggerEvent('muhaddil_bank:openForgeMenu') end }
+                            {
+                                name = 'forge_check',
+                                icon = 'fas fa-user-secret',
+                                label = fl.label,
+                                onSelect = function()
+                                    TriggerEvent('muhaddil_bank:openForgeMenu')
+                                end
+                            }
                         })
                     elseif targetSystem == 'qb-target' then
                         exports['qb-target']:AddTargetEntity(ped, {
-                            options = { { icon = 'fas fa-user-secret', label = fl.label, action = function() TriggerEvent(
-                                'muhaddil_bank:openForgeMenu') end } },
+                            options = { {
+                                icon = 'fas fa-user-secret',
+                                label = fl.label,
+                                action = function()
+                                    TriggerEvent(
+                                        'muhaddil_bank:openForgeMenu')
+                                end
+                            } },
                             distance = 2.5
                         })
                     end
@@ -194,7 +208,7 @@ Citizen.CreateThread(function()
             local fl = Config.Checks.ForgeLocation
             if (not fl.useped) or (fl.useped and not targetSystem) then
                 local interactCoords = fl.useped and vector3(fl.pedcoords.x, fl.pedcoords.y, fl.pedcoords.z) or fl
-                .coords
+                    .coords
                 local distance = #(playerCoords - interactCoords)
 
                 if distance < 15.0 then
@@ -243,7 +257,7 @@ function OpenBank(bankId, bankName)
     SendNUIMessage({
         action = 'setData',
         data = data,
-        currentBank = bankName,
+        currentBank = data.currentBankInfo.name,
         currentBankId = bankId,
         currentBankType = currentBankType,
         commissionRate = commissionRate,
@@ -579,7 +593,7 @@ RegisterNetEvent('muhaddil_bank:refreshData', function()
     SendNUIMessage({
         action = 'setData',
         data = data,
-        currentBank = currentBankName,
+        currentBank = data.currentBankInfo.name,
         currentBankId = currentBankLocation,
         currentBankType = currentBankType,
         commissionRate = commissionRate,
@@ -600,6 +614,10 @@ RegisterNetEvent('muhaddil_bank:refreshData', function()
             })
         end
     end
+end)
+
+RegisterNetEvent('muhaddil_bank:refreshBlips', function()
+    CreateBlips()
 end)
 
 RegisterNetEvent('muhaddil_bank:openBank', function()
@@ -639,8 +657,10 @@ function SetLocale()
     })
 end
 
-CreateBlips()
-SetLocale()
+CreateThread(function()
+    CreateBlips()
+    SetLocale()
+end)
 
 exports('OpenBankById', function(bankId)
     if isOpen then return false end

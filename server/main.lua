@@ -42,20 +42,58 @@ lib.callback.register('muhaddil_bank:getAvailableBanks', function(source)
 
     for _, bankLocation in ipairs(Config.BankLocations) do
         if bankLocation.purchasable then
-            local owner = MySQL.scalar.await('SELECT owner FROM bank_ownership WHERE bank_id = ?', { bankLocation.id })
+            local ownership = MySQL.single.await('SELECT owner, bank_name FROM bank_ownership WHERE bank_id = ?',
+                { bankLocation.id })
 
             table.insert(available, {
                 id = bankLocation.id,
-                name = bankLocation.name,
+                name = (ownership and ownership.bank_name) or bankLocation.name,
                 coords = bankLocation.coords,
-                isOwned = owner ~= nil,
-                owner = owner,
+                isOwned = ownership ~= nil,
+                owner = ownership and ownership.owner or nil,
                 price = Config.BankOwnership.PurchasePrice
             })
         end
     end
 
     return available
+end)
+
+lib.callback.register('muhaddil_bank:getBankNames', function(source)
+    local names = {}
+    local ownership = MySQL.query.await('SELECT bank_id, bank_name FROM bank_ownership')
+    local customNames = {}
+
+    if ownership then
+        for _, row in ipairs(ownership) do
+            customNames[row.bank_id] = row.bank_name
+        end
+    end
+
+    for _, bank in ipairs(Config.BankLocations) do
+        names[bank.id] = customNames[bank.id] or bank.name
+    end
+
+    return names
+end)
+
+lib.callback.register('muhaddil_bank:getBankName', function(source, bankId)
+    local result = MySQL.single.await(
+        'SELECT bank_name FROM bank_ownership WHERE bank_id = ?',
+        { bankId }
+    )
+
+    if result and result.bank_name then
+        return result.bank_name
+    end
+
+    for _, bank in ipairs(Config.BankLocations) do
+        if bank.id == bankId then
+            return bank.name
+        end
+    end
+
+    return "Banco"
 end)
 
 lib.callback.register('muhaddil_bank:getData', function(source, bankId)
@@ -73,18 +111,24 @@ lib.callback.register('muhaddil_bank:getData', function(source, bankId)
         end
 
         if bankLocation then
-            local ownedBank = MySQL.single.await('SELECT commission_rate FROM bank_ownership WHERE bank_id = ?',
+            local ownedBank = MySQL.single.await(
+                'SELECT bank_name, commission_rate FROM bank_ownership WHERE bank_id = ?',
                 { bankId })
             local commissionRate = 0
-            if Config.BankOwnership.Enabled and ownedBank and ownedBank.commission_rate then
+            local customName = bankLocation.name
+
+            if Config.BankOwnership.Enabled and ownedBank then
                 commissionRate = tonumber(ownedBank.commission_rate) or 0
+                if ownedBank.bank_name then
+                    customName = ownedBank.bank_name
+                end
             end
 
             local isOwned = ownedBank ~= nil
             local bankType = bankLocation.bankType or (isOwned and 'private' or 'state')
             currentBankInfo = {
                 id = bankLocation.id,
-                name = bankLocation.name,
+                name = customName,
                 bankType = bankType,
                 commissionRate = commissionRate,
                 isOwned = isOwned
