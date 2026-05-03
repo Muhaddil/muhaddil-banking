@@ -728,90 +728,66 @@ end
 
 function CalculateNextExecution(frequency, dayOfWeek, hour, minute)
     local now = os.time()
-    local nextExec = now
+    local today = os.date('*t', now)
+
+    local function isoToLuaDay(d)
+        return (d % 7) + 1
+    end
 
     if frequency == 'daily' then
-        local today = os.date('*t', now)
-        nextExec = os.time({
-            year = today.year,
-            month = today.month,
-            day = today.day,
-            hour = hour,
-            min = minute,
-            sec = 0
+        local baseToday = os.time({
+            year = today.year, month = today.month, day = today.day,
+            hour = 0, min = 0, sec = 0
         })
-        if nextExec <= now then
-            nextExec = nextExec + 86400
+
+        local candidate = baseToday + (hour * 3600) + (minute * 60)
+
+        if candidate <= now then
+            candidate = candidate + 86400
         end
-    elseif frequency == 'weekly' then
-        local today = os.date('*t', now)
+
+        return os.date('%Y-%m-%d %H:%M:%S', candidate)
+
+    elseif frequency == 'weekly' or frequency == 'biweekly' then
+        local interval = (frequency == 'biweekly') and 14 or 7
+        local luaDay = isoToLuaDay(dayOfWeek)
         local currentDay = today.wday
-        local daysUntil = (dayOfWeek - currentDay + 7) % 7
+        local daysUntil = (luaDay - currentDay + 7) % 7
+
+        local baseToday = os.time({
+            year = today.year, month = today.month, day = today.day,
+            hour = 0, min = 0, sec = 0
+        })
+
         if daysUntil == 0 then
-            local todayExec = os.time({
-                year = today.year,
-                month = today.month,
-                day = today.day,
-                hour = hour,
-                min = minute,
-                sec = 0
-            })
-            if todayExec <= now then
-                daysUntil = 7
+            local candidate = baseToday + (hour * 3600) + (minute * 60)
+            if candidate <= now then
+                daysUntil = interval
             end
         end
-        nextExec = os.time({
-            year = today.year,
-            month = today.month,
-            day = today.day + daysUntil,
-            hour = hour,
-            min = minute,
-            sec = 0
-        })
-    elseif frequency == 'biweekly' then
-        local today = os.date('*t', now)
-        local currentDay = today.wday
-        local daysUntil = (dayOfWeek - currentDay + 7) % 7
-        if daysUntil == 0 then
-            local todayExec = os.time({
-                year = today.year,
-                month = today.month,
-                day = today.day,
-                hour = hour,
-                min = minute,
-                sec = 0
-            })
-            if todayExec <= now then
-                daysUntil = 14
-            end
-        end
-        nextExec = os.time({
-            year = today.year,
-            month = today.month,
-            day = today.day + daysUntil,
-            hour = hour,
-            min = minute,
-            sec = 0
-        })
+
+        local candidate = baseToday + (daysUntil * 86400) + (hour * 3600) + (minute * 60)
+        return os.date('%Y-%m-%d %H:%M:%S', candidate)
+
     elseif frequency == 'monthly' then
-        local today = os.date('*t', now)
         local nextMonth = today.month + 1
         local nextYear = today.year
+        
         if nextMonth > 12 then
             nextMonth = 1
             nextYear = nextYear + 1
         end
-        nextExec = os.time({
-            year = nextYear,
-            month = nextMonth,
+
+        local candidate = os.time({
+            year = nextYear, month = nextMonth,
             day = math.min(today.day, 28),
-            hour = hour,
-            min = minute,
-            sec = 0
+            hour = hour, min = minute, sec = 0
         })
+
+        return os.date('%Y-%m-%d %H:%M:%S', candidate)
     end
 
-    return os.date('%Y-%m-%d %H:%M:%S', nextExec)
+    return os.date('%Y-%m-%d %H:%M:%S', now)
 end
 
 function BuildCheckMetadata(checkCode, amount, memo, issuerName, fromAccountId, expiresAt, isFake)

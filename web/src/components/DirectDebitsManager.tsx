@@ -8,6 +8,7 @@ import { Receipt, Power, Trash2, Building, RefreshCw, AlertCircle } from "lucide
 import { fetchNui } from "../utils/fetchNui"
 import { useLocale } from "../hooks/useLocale"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/Select"
+import { formatDate } from '../utils/formatDate'
 
 interface DirectDebit {
     id: number
@@ -48,7 +49,7 @@ const freqLabels: Record<string, string> = {
 }
 
 export const DirectDebitsManager: React.FC<DirectDebitsManagerProps> = ({ debits, accounts, config }) => {
-    const { t } = useLocale()
+    const { t, locale } = useLocale()
     const [confirmDelete, setConfirmDelete] = useState<number | null>(null)
 
     const activeDebits = debits.filter((d) => d.enabled === 1)
@@ -148,7 +149,7 @@ export const DirectDebitsManager: React.FC<DirectDebitsManagerProps> = ({ debits
                                                 </span>
                                                 {debit.next_execution && (
                                                     <span>
-                                                        {t("directDebits.nextCharge") || "Próximo cobro"}: {new Date(debit.next_execution).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
+                                                        {t("directDebits.nextCharge") || "Próximo cobro"}: {formatDate(debit.next_execution, locale)}
                                                     </span>
                                                 )}
                                                 {debit.source_resource && debit.source_resource !== "unknown" && (

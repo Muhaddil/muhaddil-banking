@@ -7,6 +7,7 @@ import { Button } from "./ui/Button"
 import { Clock, Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Repeat } from "lucide-react"
 import { useLocale } from "../hooks/useLocale"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/Select"
+import { formatDate } from '../utils/formatDate'
 
 interface ScheduledTransfer {
     id: number
@@ -54,7 +55,7 @@ interface ScheduledTransfersProps {
 export const ScheduledTransfers: React.FC<ScheduledTransfersProps> = ({
     transfers, accounts, allAccounts, config, onCreateTransfer, onUpdateTransfer, onToggleTransfer, onDeleteTransfer
 }) => {
-    const { t } = useLocale()
+    const { t, locale } = useLocale()
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [editingTransfer, setEditingTransfer] = useState<ScheduledTransfer | null>(null)
 
@@ -139,12 +140,6 @@ export const ScheduledTransfers: React.FC<ScheduledTransfersProps> = ({
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
     }
 
-    const formatDate = (dateStr: string | null) => {
-        if (!dateStr) return '-'
-        const date = new Date(dateStr)
-        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -212,7 +207,7 @@ export const ScheduledTransfers: React.FC<ScheduledTransfersProps> = ({
                                 </div>
                                 <div>
                                     <span className="text-[rgb(var(--text-secondary))]">{t("scheduledTransfers.nextExecution")}:</span>
-                                    <p className="text-white">{formatDate(transfer.next_execution)}</p>
+                                    <p className="text-white">{formatDate(transfer.next_execution, locale)}</p>
                                 </div>
                             </div>
 
