@@ -1,24 +1,24 @@
 RegisterCommand('bankadmin', function(source, args, rawCommand)
     if not hasPermission(source) then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'No tienes permisos')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.no_permissions'))
         return
     end
 
     local accounts = MySQL.query.await('SELECT * FROM bank_accounts ORDER BY balance DESC LIMIT 50', {})
 
-    print("^2========== TOP 50 CUENTAS ==========^7")
+    print("^2========== " .. Locale('admin.top50_header') .. " ==========^7")
     for i, acc in ipairs(accounts) do
-        print(string.format("^3#%d^7 | Owner: ^2%s^7 | Nombre: ^5%s^7 | Balance: ^1$%.2f^7",
-            i, acc.owner, acc.account_name, acc.balance))
+        print(string.format("^3#%d^7 | %s: ^2%s^7 | %s: ^5%s^7 | %s: ^1$%.2f^7",
+            i, Locale('admin.owner'), acc.owner, Locale('admin.name'), acc.account_name, Locale('admin.balance'), acc.balance))
     end
     print("^2=====================================^7")
 
-    TriggerClientEvent('muhaddil_bank:notify', source, 'success', 'Revisa la consola del servidor')
+    TriggerClientEvent('muhaddil_bank:notify', source, 'success', Locale('server.check_console'))
 end, false)
 
 RegisterCommand('bankaddmoney', function(source, args, rawCommand)
     if not hasPermission(source) then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'No tienes permisos')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.no_permissions'))
         return
     end
 
@@ -26,7 +26,7 @@ RegisterCommand('bankaddmoney', function(source, args, rawCommand)
     local amount = tonumber(args[2])
 
     if not accountId or not amount then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'Uso: /bankaddmoney [ID de cuenta] [cantidad]')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('admin.usage_addmoney'))
         return
     end
 
@@ -37,20 +37,20 @@ RegisterCommand('bankaddmoney', function(source, args, rawCommand)
     local affectedRows = type(result) == 'table' and result.affectedRows or result
     if affectedRows and affectedRows > 0 then
         MySQL.insert.await('INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)', {
-            accountId, 'admin_deposit', amount, 'Depósito administrativo'
+            accountId, 'admin_deposit', amount, Locale('admin.admin_deposit_desc')
         })
 
         TriggerClientEvent('muhaddil_bank:notify', source, 'success',
-            string.format('Se añadieron $%.2f a la cuenta #%d', amount, accountId))
+            Locale('admin.added_money', amount, accountId))
         print(string.format("^2[ADMIN] %s añadió $%.2f a la cuenta #%d^7", GetPlayerName(source), amount, accountId))
     else
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'Cuenta no encontrada')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.account_not_found'))
     end
 end, false)
 
 RegisterCommand('bankremovemoney', function(source, args, rawCommand)
     if not hasPermission(source) then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'No tienes permisos')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.no_permissions'))
         return
     end
 
@@ -58,7 +58,7 @@ RegisterCommand('bankremovemoney', function(source, args, rawCommand)
     local amount = tonumber(args[2])
 
     if not accountId or not amount then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'Uso: /bankremovemoney [ID de cuenta] [cantidad]')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('admin.usage_removemoney'))
         return
     end
 
@@ -68,45 +68,45 @@ RegisterCommand('bankremovemoney', function(source, args, rawCommand)
 
     if affectedRows > 0 then
         MySQL.insert.await('INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)', {
-            accountId, 'admin_withdrawal', -amount, 'Retiro administrativo'
+            accountId, 'admin_withdrawal', -amount, Locale('admin.admin_withdrawal_desc')
         })
 
         TriggerClientEvent('muhaddil_bank:notify', source, 'success',
-            string.format('Se removieron $%.2f de la cuenta #%d', amount, accountId))
+            Locale('admin.removed_money', amount, accountId))
         print(string.format("^2[ADMIN] %s removió $%.2f de la cuenta #%d^7", GetPlayerName(source), amount, accountId))
     else
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'Cuenta no encontrada')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.account_not_found'))
     end
 end, false)
 
 RegisterCommand('bankloans', function(source, args, rawCommand)
     if not hasPermission(source) then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'No tienes permisos')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.no_permissions'))
         return
     end
 
     local loans = MySQL.query.await('SELECT * FROM bank_loans WHERE status = "active" ORDER BY remaining DESC', {})
 
-    print("^2========== PRÉSTAMOS ACTIVOS ==========^7")
+    print("^2========== " .. Locale('admin.active_loans_header') .. " ==========^7")
     for i, loan in ipairs(loans) do
-        print(string.format("^3#%d^7 | Usuario: ^2%s^7 | Monto: ^1$%.2f^7 | Restante: ^1$%.2f^7",
-            loan.id, loan.user_identifier, loan.amount, loan.remaining))
+        print(string.format("^3#%d^7 | %s: ^2%s^7 | %s: ^1$%.2f^7 | %s: ^1$%.2f^7",
+            loan.id, Locale('admin.user'), loan.user_identifier, Locale('admin.amount'), loan.amount, Locale('admin.remaining'), loan.remaining))
     end
     print("^2========================================^7")
 
-    TriggerClientEvent('muhaddil_bank:notify', source, 'success', 'Revisa la consola del servidor')
+    TriggerClientEvent('muhaddil_bank:notify', source, 'success', Locale('server.check_console'))
 end, false)
 
 RegisterCommand('bankcancelloan', function(source, args, rawCommand)
     if not hasPermission(source) then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'No tienes permisos')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.no_permissions'))
         return
     end
 
     local loanId = tonumber(args[1])
 
     if not loanId then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'Uso: /bankcancelloan [ID del préstamo]')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('admin.usage_cancelloan'))
         return
     end
 
@@ -115,30 +115,30 @@ RegisterCommand('bankcancelloan', function(source, args, rawCommand)
     })
 
     if affectedRows > 0 then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'success', string.format('Préstamo #%d cancelado', loanId))
+        TriggerClientEvent('muhaddil_bank:notify', source, 'success', Locale('admin.loan_cancelled_id', loanId))
         print(string.format("^2[ADMIN] %s canceló el préstamo #%d^7", GetPlayerName(source), loanId))
     else
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'Préstamo no encontrado')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.loan_not_found'))
     end
 end, false)
 
 RegisterCommand('bankinfo', function(source, args, rawCommand)
     if not hasPermission(source) then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'No tienes permisos')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.no_permissions'))
         return
     end
 
     local accountId = tonumber(args[1])
 
     if not accountId then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'Uso: /bankinfo [ID de cuenta]')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('admin.usage_bankinfo'))
         return
     end
 
     local accounts = MySQL.query.await('SELECT * FROM bank_accounts WHERE id = ?', { accountId })
 
     if #accounts == 0 then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'Cuenta no encontrada')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.account_not_found'))
         return
     end
 
@@ -146,42 +146,42 @@ RegisterCommand('bankinfo', function(source, args, rawCommand)
 
     local shared = MySQL.query.await('SELECT user_identifier FROM bank_shared_access WHERE account_id = ?', { accountId })
 
-    print("^2========== INFO DE CUENTA #" .. accountId .. " ==========^7")
-    print("^3Nombre:^7 " .. account.account_name)
-    print("^3Owner:^7 " .. account.owner)
-    print("^3Balance:^7 $" .. string.format("%.2f", account.balance))
-    print("^3Creada:^7 " .. account.created_at)
+    print("^2========== " .. Locale('admin.account_info_header', accountId) .. " ==========^7")
+    print("^3" .. Locale('admin.name') .. ":^7 " .. account.account_name)
+    print("^3" .. Locale('admin.owner') .. ":^7 " .. account.owner)
+    print("^3" .. Locale('admin.balance') .. ":^7 $" .. string.format("%.2f", account.balance))
+    print("^3" .. Locale('admin.created_at') .. ":^7 " .. account.created_at)
 
     if #shared > 0 then
-        print("^3Usuarios compartidos:^7")
+        print("^3" .. Locale('admin.shared_users') .. "^7")
         for _, user in ipairs(shared) do
             print("  - " .. user.user_identifier)
         end
     else
-        print("^3Usuarios compartidos:^7 Ninguno")
+        print("^3" .. Locale('admin.shared_users') .. "^7 " .. Locale('admin.none'))
     end
 
     print("^2=============================================^7")
 
-    TriggerClientEvent('muhaddil_bank:notify', source, 'success', 'Revisa la consola del servidor')
+    TriggerClientEvent('muhaddil_bank:notify', source, 'success', Locale('server.check_console'))
 end, false)
 
 RegisterCommand('bankreset', function(source, args, rawCommand)
     if not hasPermission(source) then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'No tienes permisos')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.no_permissions'))
         return
     end
 
     local targetId = tonumber(args[1])
 
     if not targetId then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'Uso: /bankreset [ID del jugador]')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('admin.usage_bankreset'))
         return
     end
 
     local targetIdentifier = GetPlayerIdentifier(targetId)
     if not targetIdentifier then
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', 'Jugador no encontrado')
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.player_not_found'))
         return
     end
 
@@ -190,8 +190,8 @@ RegisterCommand('bankreset', function(source, args, rawCommand)
     MySQL.query.await('UPDATE bank_loans SET status = "cancelled", remaining = 0 WHERE user_identifier = ?',
         { targetIdentifier })
 
-    TriggerClientEvent('muhaddil_bank:notify', source, 'success', 'Banco del jugador reseteado')
-    TriggerClientEvent('muhaddil_bank:notify', targetId, 'error', 'Tu banco ha sido reseteado por un administrador')
+    TriggerClientEvent('muhaddil_bank:notify', source, 'success', Locale('admin.bank_reset_success'))
+    TriggerClientEvent('muhaddil_bank:notify', targetId, 'error', Locale('admin.bank_reset_target'))
     print(string.format("^2[ADMIN] %s reseteó el banco de %s^7", GetPlayerName(source), GetPlayerName(targetId)))
 end, false)
 
@@ -283,7 +283,7 @@ lib.callback.register('muhaddil_bank:adminSearchUser', function(source, searchQu
     end
 
     if not targetIdentifier then
-        return { error = 'Jugador no encontrado' }
+        return { error = Locale('server.player_not_found') }
     end
 
     local accounts = MySQL.query.await('SELECT * FROM bank_accounts WHERE owner = ?', { targetIdentifier })
@@ -335,16 +335,16 @@ RegisterNetEvent('muhaddil_bank:adminAddMoney', function(accountId, amount)
 
     local account = MySQL.single.await('SELECT id FROM bank_accounts WHERE id = ?', { accountId })
     if not account then
-        return Notify(src, 'error', 'La cuenta no existe')
+        return Notify(src, 'error', Locale('server.account_not_found'))
     end
 
     MySQL.query.await('UPDATE bank_accounts SET balance = balance + ? WHERE id = ?', { amount, accountId })
     MySQL.insert.await(
         'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-        { accountId, 'admin_deposit', amount, 'Depósito administrativo' }
+        { accountId, 'admin_deposit', amount, Locale('admin.admin_deposit_desc') }
     )
 
-    Notify(src, 'success', string.format('$%.2f añadidos a cuenta #%d', amount, accountId))
+    Notify(src, 'success', Locale('admin.added_money', amount, accountId))
     print(string.format("^2[ADMIN] %s añadió $%.2f a cuenta #%d^7", GetPlayerName(src), amount, accountId))
 end)
 
@@ -358,16 +358,16 @@ RegisterNetEvent('muhaddil_bank:adminRemoveMoney', function(accountId, amount)
 
     local account = MySQL.single.await('SELECT id FROM bank_accounts WHERE id = ?', { accountId })
     if not account then
-        return Notify(src, 'error', 'La cuenta no existe')
+        return Notify(src, 'error', Locale('server.account_not_found'))
     end
 
     MySQL.query.await('UPDATE bank_accounts SET balance = balance - ? WHERE id = ?', { amount, accountId })
     MySQL.insert.await(
         'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-        { accountId, 'admin_withdrawal', -amount, 'Retiro administrativo' }
+        { accountId, 'admin_withdrawal', -amount, Locale('admin.admin_withdrawal_desc') }
     )
 
-    Notify(src, 'success', string.format('$%.2f removidos de cuenta #%d', amount, accountId))
+    Notify(src, 'success', Locale('admin.removed_money', amount, accountId))
     print(string.format("^2[ADMIN] %s removió $%.2f de cuenta #%d^7", GetPlayerName(src), amount, accountId))
 end)
 
@@ -380,7 +380,7 @@ RegisterNetEvent('muhaddil_bank:adminCancelLoan', function(loanId)
 
     MySQL.query.await('UPDATE bank_loans SET status = "cancelled", remaining = 0 WHERE id = ?', { loanId })
 
-    Notify(src, 'success', string.format('Préstamo #%d cancelado', loanId))
+    Notify(src, 'success', Locale('admin.loan_cancelled_id', loanId))
     print(string.format("^2[ADMIN] %s canceló préstamo #%d^7", GetPlayerName(src), loanId))
 end)
 
@@ -396,9 +396,9 @@ RegisterNetEvent('muhaddil_bank:adminFreezeAccount', function(accountId)
         MySQL.query.await('UPDATE bank_accounts SET balance = 0 WHERE id = ?', { accountId })
         MySQL.insert.await(
             'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-            { accountId, 'admin_freeze', -tonumber(balance), 'Cuenta congelada por administrador' }
+            { accountId, 'admin_freeze', -tonumber(balance), Locale('admin.admin_freeze_desc') }
         )
-        Notify(src, 'success', string.format('Cuenta #%d congelada', accountId))
+        Notify(src, 'success', Locale('admin.account_frozen_id', accountId))
         print(string.format("^2[ADMIN] %s congeló cuenta #%d^7", GetPlayerName(src), accountId))
     end
 end)
@@ -411,7 +411,7 @@ RegisterNetEvent('muhaddil_bank:adminDeleteScheduled', function(transferId)
     if not transferId then return end
 
     MySQL.query.await('DELETE FROM bank_scheduled_transfers WHERE id = ?', { transferId })
-    Notify(src, 'success', string.format('Transferencia programada #%d eliminada', transferId))
+    Notify(src, 'success', Locale('admin.scheduled_deleted_id', transferId))
 end)
 
 RegisterNetEvent('muhaddil_bank:adminCancelRequest', function(requestId)
@@ -425,7 +425,7 @@ RegisterNetEvent('muhaddil_bank:adminCancelRequest', function(requestId)
         "UPDATE bank_transfer_requests SET status = 'cancelled', resolved_at = NOW() WHERE id = ?",
         { requestId }
     )
-    Notify(src, 'success', string.format('Solicitud #%d cancelada', requestId))
+    Notify(src, 'success', Locale('admin.request_cancelled_id', requestId))
 end)
 
 if Config.AdminPanel and Config.AdminPanel.Enabled then
@@ -460,7 +460,7 @@ exports('AddMoneyToAccount', function(accountId, amount, reason)
     if affectedRows > 0 then
         MySQL.insert.await(
             'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-            { accountId, 'admin_deposit', amount, reason or 'Depósito administrativo' }
+            { accountId, 'admin_deposit', amount, reason or Locale('admin.admin_deposit_desc') }
         )
         return true
     end
@@ -481,7 +481,7 @@ exports('RemoveMoneyFromAccount', function(accountId, amount, reason)
     if affectedRows > 0 then
         MySQL.insert.await(
             'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-            { accountId, 'admin_withdrawal', -amount, reason or 'Retiro administrativo' }
+            { accountId, 'admin_withdrawal', -amount, reason or Locale('admin.admin_withdrawal_desc') }
         )
         return true
     end

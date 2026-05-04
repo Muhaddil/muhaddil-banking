@@ -223,13 +223,13 @@ if Config.ScheduledTransfers.Enabled then
                         query =
                         'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
                         values = { transfer.from_account_id, 'scheduled_out', -amount,
-                            'Transferencia programada: ' .. (transfer.description or '#' .. transfer.id) }
+                            Locale('server.scheduled_transfer_transaction', transfer.id, transfer.description) }
                     },
                     {
                         query =
                         'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
                         values = { transfer.to_account_id, 'scheduled_in', amount,
-                            'Transferencia programada recibida: ' .. (transfer.description or '#' .. transfer.id) }
+                            Locale('server.scheduled_transfer_transaction_received', transfer.id, transfer.description) }
                     }
                 })
 
