@@ -281,7 +281,6 @@ const AppContent: React.FC<AppContentProps> = ({
             scheduleChecksEnabled={data.scheduleChecksEnabled}
             transferRequestsEnabled={data.transferRequestsEnabled}
             contactsEnabled={data.contactsEnabled}
-            isAdmin={data.isAdmin}
           />
 
           <main className="flex-1 p-4 md:p-8 overflow-y-auto custom-scrollbar flex flex-col">
@@ -422,9 +421,7 @@ const AppContent: React.FC<AppContentProps> = ({
                   />
                 )}
 
-                {activeTab === "admin" && (
-                  <AdminPanel onClose={() => setActiveTab("accounts")} />
-                )}
+
               </>
             )}
           </main>
@@ -589,6 +586,7 @@ const App = () => {
   const [standaloneForgeVisible, setStandaloneForgeVisible] = useState(false)
   const [standaloneCheckClosing, setStandaloneCheckClosing] = useState(false)
   const [standaloneForgeClosing, setStandaloneForgeClosing] = useState(false)
+  const [adminVisible, setAdminVisible] = useState(false)
   const [data, setData] = useState<AppData>({
     accounts: [],
     sharedAccounts: [],
@@ -810,8 +808,7 @@ const App = () => {
   }
 
   useNuiEvent("openAdminPanel", () => {
-    setActiveTab("admin")
-    setData((prev) => ({ ...prev, isAdmin: true }))
+    setAdminVisible(true)
   })
 
   useNuiEvent("openCheckViewer", (event: any) => {
@@ -855,12 +852,12 @@ const App = () => {
     return () => window.removeEventListener("keydown", handleEscapeStandalone)
   }, [standaloneCheckData, standaloneForgeVisible, closeStandaloneUi])
 
-  if (!visible && !standaloneCheckData && !standaloneForgeVisible) return null
+  if (!visible && !adminVisible && !standaloneCheckData && !standaloneForgeVisible) return null
 
   return (
     <LocaleProvider>
       <ThemeProvider>
-        {visible && (
+        {visible && !adminVisible && (
           <AppContent
             visible={visible}
             setVisible={setVisible}
@@ -879,6 +876,22 @@ const App = () => {
             onSelectAccount={(id) => setSelectedAccountId(id)}
             isLoading={isLoading}
           />
+        )}
+        {adminVisible && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 md:p-8 animate-in">
+            <div className="w-full max-w-7xl h-[90vh] flex rounded-3xl overflow-hidden shadow-2xl relative animate-scale-in">
+              <div className="absolute inset-0 bg-[rgb(var(--bg-primary))] z-0 transition-colors duration-300">
+                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[rgba(var(--accent-primary),0.2)] via-[rgba(var(--accent-secondary),0.15)] to-transparent pointer-events-none" />
+                <div className="absolute bottom-0 right-0 w-96 h-96 bg-[rgba(var(--accent-glow),0.1)] rounded-full blur-3xl" />
+              </div>
+              <div className="relative z-10 flex w-full h-full">
+                <AdminPanel onClose={() => {
+                  setAdminVisible(false)
+                  fetchNui("closeAdmin")
+                }} />
+              </div>
+            </div>
+          </div>
         )}
         <CheckViewerNui checkData={standaloneCheckData} isClosing={standaloneCheckClosing} onClose={closeStandaloneUi} />
         <CheckForgeNui visible={standaloneForgeVisible} isClosing={standaloneForgeClosing} onClose={closeStandaloneUi} />

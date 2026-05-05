@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { LayoutDashboard, CreditCard, History, Banknote, Building2, LogOut, PiggyBank, Users, ArrowLeftRight, Repeat, Shield, FileText, Receipt } from "lucide-react"
+import { LayoutDashboard, CreditCard, History, Banknote, Building2, LogOut, PiggyBank, Users, ArrowLeftRight, Repeat, FileText, Receipt } from "lucide-react"
 import { ThemeSwitcher } from "./ThemeSwitcher"
 import { useLocale } from "../hooks/useLocale"
 
@@ -17,10 +17,9 @@ interface SidebarProps {
     scheduleChecksEnabled?: boolean
     transferRequestsEnabled?: boolean
     contactsEnabled?: boolean
-    isAdmin?: boolean
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onClose, currentBank, currentBankType, bankManagementEnabled, directDebitsEnabled, checksEnabled, scheduleChecksEnabled, transferRequestsEnabled, contactsEnabled, isAdmin }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onClose, currentBank, currentBankType, bankManagementEnabled, directDebitsEnabled, checksEnabled, scheduleChecksEnabled, transferRequestsEnabled, contactsEnabled }) => {
     const { t } = useLocale()
 
     const bankTitle = currentBank && currentBank.trim() ? currentBank : t("sidebar.bankName")
@@ -53,9 +52,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onClo
             : []),
         ...(bankManagementEnabled
             ? [{ id: "banks", label: t("sidebar.banks"), icon: <Building2 size={20} /> }]
-            : []),
-        ...(isAdmin
-            ? [{ id: "admin", label: t("sidebar.admin"), icon: <Shield size={20} /> }]
             : []),
     ]
 

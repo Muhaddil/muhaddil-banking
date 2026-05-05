@@ -250,6 +250,9 @@ MySQL.ready(function()
                 INDEX `idx_identifier` (`identifier`),
                 INDEX `idx_check_code` (`check_code`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ]],
+        [[
+            ALTER TABLE `bank_accounts` ADD COLUMN `frozen` TINYINT (1) DEFAULT 0 AFTER `balance`;
         ]]
     }
 
@@ -736,8 +739,12 @@ function CalculateNextExecution(frequency, dayOfWeek, hour, minute)
 
     if frequency == 'daily' then
         local baseToday = os.time({
-            year = today.year, month = today.month, day = today.day,
-            hour = 0, min = 0, sec = 0
+            year = today.year,
+            month = today.month,
+            day = today.day,
+            hour = 0,
+            min = 0,
+            sec = 0
         })
 
         local candidate = baseToday + (hour * 3600) + (minute * 60)
@@ -747,7 +754,6 @@ function CalculateNextExecution(frequency, dayOfWeek, hour, minute)
         end
 
         return os.date('%Y-%m-%d %H:%M:%S', candidate)
-
     elseif frequency == 'weekly' or frequency == 'biweekly' then
         local interval = (frequency == 'biweekly') and 14 or 7
         local luaDay = isoToLuaDay(dayOfWeek)
@@ -755,8 +761,12 @@ function CalculateNextExecution(frequency, dayOfWeek, hour, minute)
         local daysUntil = (luaDay - currentDay + 7) % 7
 
         local baseToday = os.time({
-            year = today.year, month = today.month, day = today.day,
-            hour = 0, min = 0, sec = 0
+            year = today.year,
+            month = today.month,
+            day = today.day,
+            hour = 0,
+            min = 0,
+            sec = 0
         })
 
         if daysUntil == 0 then
@@ -768,20 +778,22 @@ function CalculateNextExecution(frequency, dayOfWeek, hour, minute)
 
         local candidate = baseToday + (daysUntil * 86400) + (hour * 3600) + (minute * 60)
         return os.date('%Y-%m-%d %H:%M:%S', candidate)
-
     elseif frequency == 'monthly' then
         local nextMonth = today.month + 1
         local nextYear = today.year
-        
+
         if nextMonth > 12 then
             nextMonth = 1
             nextYear = nextYear + 1
         end
 
         local candidate = os.time({
-            year = nextYear, month = nextMonth,
+            year = nextYear,
+            month = nextMonth,
             day = math.min(today.day, 28),
-            hour = hour, min = minute, sec = 0
+            hour = hour,
+            min = minute,
+            sec = 0
         })
 
         return os.date('%Y-%m-%d %H:%M:%S', candidate)
@@ -818,6 +830,11 @@ function GetPlayerDisplayName(src)
         end
     end
     return ((Locale('server.player') or 'Jugador ') .. src)
+end
+
+function IsAccountFrozen(accountId)
+    local account = MySQL.query.await('SELECT * FROM bank_accounts WHERE id = ?', { accountId })
+    return account and account[1] and account[1].frozen
 end
 
 -- exports('GetPlayer', GetPlayer)

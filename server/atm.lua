@@ -250,6 +250,10 @@ exports('ATMDeposit', function(source, accountId, amount)
     amount = tonumber(amount)
     if not amount or amount <= 0 then return false, Locale('server.invalid_amount') end
 
+    if IsAccountFrozen(accountId) then
+        return false, Locale('server.account_frozen')
+    end
+
     if amount > Config.ATMs.DepositLimit then
         return false, Locale('server.deposit_limit', Config.ATMs.DepositLimit)
     end
@@ -277,6 +281,10 @@ end)
 exports('ATMWithdraw', function(source, accountId, amount)
     amount = tonumber(amount)
     if not amount or amount <= 0 then return false, Locale('server.invalid_amount') end
+
+    if IsAccountFrozen(accountId) then
+        return false, Locale('server.account_frozen')
+    end
 
     if amount > Config.ATMs.WithdrawLimit then
         return false, Locale('server.withdraw_limit', Config.ATMs.WithdrawLimit)
@@ -327,6 +335,10 @@ exports('ATMTransfer', function(source, fromAccountId, toAccountId, amount)
     fromAccountId = tonumber(fromAccountId)
     toAccountId = exports['muhaddil-banking']:ResolveAccountId(toAccountId)
     amount = tonumber(amount)
+
+    if IsAccountFrozen(fromAccountId) then
+        return false, Locale('server.account_frozen')
+    end
 
     if not fromAccountId or not toAccountId or not amount or amount <= 0 then
         return false, Locale('server.invalid_amount')

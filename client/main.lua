@@ -5,6 +5,7 @@ local currentBankLocation = nil
 local currentBankName = nil
 local ESXVer = Config.ESXVer
 local FrameWork = nil
+local adminPanelOpen = false
 
 if Config.FrameWork == "auto" then
     if GetResourceState('es_extended') == 'started' then
@@ -499,6 +500,11 @@ RegisterNUICallback('adminCancelRequest', function(data, cb)
     cb('ok')
 end)
 
+RegisterNUICallback('adminGetAlerts', function(data, cb)
+    local result = lib.callback.await('muhaddil_bank:getAdminAlerts', false)
+    cb(result or {})
+end)
+
 RegisterNUICallback('createCheck', function(data, cb)
     TriggerServerEvent('muhaddil_bank:createCheck', data)
     cb('ok')
@@ -579,7 +585,7 @@ RegisterNUICallback('copyToClipboard', function(data, cb)
 end)
 
 RegisterNetEvent('muhaddil_bank:refreshData', function()
-    if not isOpen then return end
+    if not isOpen or adminPanelOpen then return end
 
     Wait(100)
 
@@ -639,14 +645,22 @@ end)
 RegisterNetEvent('muhaddil_bank:openAdminPanel', function()
     if isOpen then return end
     isOpen = true
+    adminPanelOpen = true
     SetNuiFocus(true, true)
+    SendNUIMessage({
+        action = 'setLocale',
+        locale = Config.Locale
+    })
     SendNUIMessage({
         action = 'openAdminPanel',
     })
-    SendNUIMessage({
-        action = 'setVisible',
-        data = true
-    })
+end)
+
+RegisterNUICallback('closeAdmin', function(data, cb)
+    isOpen = false
+    adminPanelOpen = false
+    CloseBank()
+    cb('ok')
 end)
 
 function SetLocale()

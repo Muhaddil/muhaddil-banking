@@ -513,8 +513,21 @@ RegisterNetEvent('muhaddil_bank:deposit', function(accountId, amount, bankLocati
     local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
 
+    if IsAccountFrozen(accountId) then
+        return Notify(src, 'error', Locale('server.account_frozen'))
+    end
+
     amount = tonumber(amount)
     if amount <= 0 then return Notify(src, 'error', Locale('server.invalid_amount')) end
+
+    local account = MySQL.single.await('SELECT * FROM bank_accounts WHERE id = ?', { accountId })
+    if not account then
+        return Notify(src, 'error', Locale('server.account_not_found'))
+    end
+
+    if account.frozen and account.frozen == 1 then
+        return Notify(src, 'error', Locale('server.account_frozen') or 'Cuenta congelada')
+    end
 
     if RemovePlayerMoney(src, amount) then
         MySQL.query.await('UPDATE bank_accounts SET balance = balance + ? WHERE id = ?', { amount, accountId })
@@ -546,12 +559,16 @@ RegisterNetEvent('muhaddil_bank:withdraw', function(accountId, amount, bankLocat
         return Notify(src, 'error', Locale('server.invalid_amount'))
     end
 
-    local balance = MySQL.scalar.await('SELECT balance FROM bank_accounts WHERE id = ?', { accountId })
-    balance = tonumber(balance)
-
-    if not balance then
+    local account = MySQL.single.await('SELECT * FROM bank_accounts WHERE id = ?', { accountId })
+    if not account then
         return Notify(src, 'error', Locale('server.account_not_found'))
     end
+
+    if IsAccountFrozen(accountId) then
+        return Notify(src, 'error', Locale('server.account_frozen'))
+    end
+
+    local balance = tonumber(account.balance)
 
     if balance < amount then
         return Notify(src, 'error', Locale('server.insufficient_balance'))
@@ -923,6 +940,10 @@ exports('Transfer', function(source, fromAccountId, toAccountId, amount, bankLoc
     end
 
     toAccountId = resolvedToId
+
+    if IsAccountFrozen(fromAccountId) then
+        return Notify(src, 'error', Locale('server.account_frozen'))
+    end
 
     if not amount or amount <= 0 then
         return Notify(src, 'error', Locale('server.invalid_amount'))

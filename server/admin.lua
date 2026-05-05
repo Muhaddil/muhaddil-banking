@@ -1,3 +1,44 @@
+local ESX = nil
+local QBCore = nil
+local ESXVer = Config.ESXVer
+local FrameWork = nil
+
+if Config.FrameWork == "auto" then
+    if GetResourceState('es_extended') == 'started' then
+        if ESXVer == 'new' then
+            ESX = exports['es_extended']:getSharedObject()
+            FrameWork = 'esx'
+        else
+            ESX = nil
+            while ESX == nil do
+                TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+                Citizen.Wait(0)
+            end
+        end
+    elseif GetResourceState('qb-core') == 'started' then
+        QBCore = exports['qb-core']:GetCoreObject()
+        FrameWork = 'qb'
+    else
+        print('===NO SUPPORTED FRAMEWORK FOUND===')
+    end
+elseif Config.FrameWork == "esx" and GetResourceState('es_extended') == 'started' then
+    if ESXVer == 'new' then
+        ESX = exports['es_extended']:getSharedObject()
+        FrameWork = 'esx'
+    else
+        ESX = nil
+        while ESX == nil do
+            TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+            Citizen.Wait(0)
+        end
+    end
+elseif Config.FrameWork == "qb" and GetResourceState('qb-core') == 'started' then
+    QBCore = exports['qb-core']:GetCoreObject()
+    FrameWork = 'qb'
+else
+    print('===NO SUPPORTED FRAMEWORK FOUND===')
+end
+
 RegisterCommand('bankadmin', function(source, args, rawCommand)
     if not hasPermission(source) then
         TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.no_permissions'))
@@ -195,6 +236,141 @@ RegisterCommand('bankreset', function(source, args, rawCommand)
     print(string.format("^2[ADMIN] %s reseteó el banco de %s^7", GetPlayerName(source), GetPlayerName(targetId)))
 end, false)
 
+local AlertThresholds = {
+    LargeTransaction = 50000,
+    RapidBalanceChangePercent = 80,
+    HighFrequencyCount = 10,
+    HighFrequencyMinutes = 30,
+    RecentHoursWindow = 24,
+}
+
+lib.callback.register('muhaddil_bank:getAdminAlerts', function(source)
+    if not hasPermission(source) then return nil end
+
+    local alerts = {}
+
+    local largeTx = MySQL.query.await([[
+        SELECT bt.*, ba.account_name, ba.owner
+        FROM bank_transactions bt
+        LEFT JOIN bank_accounts ba ON bt.account_id = ba.id
+        WHERE ABS(bt.amount) >= ?
+        AND bt.created_at >= DATE_SUB(NOW(), INTERVAL ? HOUR)
+        ORDER BY ABS(bt.amount) DESC
+        LIMIT 50
+    ]], { AlertThresholds.LargeTransaction, AlertThresholds.RecentHoursWindow })
+
+    for _, tx in ipairs(largeTx or {}) do
+        table.insert(alerts, {
+            type = 'large_transaction',
+            severity = math.abs(tonumber(tx.amount) or 0) >= AlertThresholds.LargeTransaction * 2 and 'critical' or 'warning',
+            accountId = tx.account_id,
+            accountName = tx.account_name or ('Account #' .. tx.account_id),
+            owner = tx.owner,
+            amount = tx.amount,
+            txType = tx.type,
+            description = tx.description,
+            date = tx.created_at,
+            txId = tx.id,
+        })
+    end
+
+    local highFreq = MySQL.query.await([[
+        SELECT account_id, ba.account_name, ba.owner, COUNT(*) as tx_count,
+            MIN(bt.created_at) as first_tx, MAX(bt.created_at) as last_tx
+        FROM bank_transactions bt
+        LEFT JOIN bank_accounts ba ON bt.account_id = ba.id
+        WHERE bt.created_at >= DATE_SUB(NOW(), INTERVAL ? MINUTE)
+        GROUP BY account_id
+        HAVING tx_count >= ?
+        ORDER BY tx_count DESC
+        LIMIT 20
+    ]], { AlertThresholds.HighFrequencyMinutes, AlertThresholds.HighFrequencyCount })
+
+    for _, freq in ipairs(highFreq or {}) do
+        table.insert(alerts, {
+            type = 'high_frequency',
+            severity = (tonumber(freq.tx_count) or 0) >= AlertThresholds.HighFrequencyCount * 2 and 'critical' or 'warning',
+            accountId = freq.account_id,
+            accountName = freq.account_name or ('Account #' .. freq.account_id),
+            owner = freq.owner,
+            txCount = freq.tx_count,
+            firstTx = freq.first_tx,
+            lastTx = freq.last_tx,
+            date = freq.last_tx,
+        })
+    end
+
+    local selfTransfers = MySQL.query.await([[
+        SELECT bt.id, bt.account_id, bt.amount, bt.description, bt.created_at,
+            ba_from.owner as from_owner, ba_from.account_name as from_name,
+            bt.description as tx_desc
+        FROM bank_transactions bt
+        INNER JOIN bank_accounts ba_from ON bt.account_id = ba_from.id
+        WHERE bt.type IN ('transfer_out', 'scheduled_out')
+        AND bt.created_at >= DATE_SUB(NOW(), INTERVAL ? HOUR)
+        AND ABS(bt.amount) >= 1000
+        ORDER BY bt.created_at DESC
+        LIMIT 30
+    ]], { AlertThresholds.RecentHoursWindow })
+
+    for _, st in ipairs(selfTransfers or {}) do
+        local targetAccId = st.tx_desc and st.tx_desc:match('#(%d+)')
+        if targetAccId then
+            local targetOwner = MySQL.scalar.await('SELECT owner FROM bank_accounts WHERE id = ?', { tonumber(targetAccId) })
+            if targetOwner and targetOwner == st.from_owner then
+                table.insert(alerts, {
+                    type = 'self_transfer',
+                    severity = 'info',
+                    accountId = st.account_id,
+                    accountName = st.from_name,
+                    owner = st.from_owner,
+                    amount = st.amount,
+                    targetAccountId = tonumber(targetAccId),
+                    description = st.tx_desc,
+                    date = st.created_at,
+                    txId = st.id,
+                })
+            end
+        end
+    end
+
+    local drainedAccounts = MySQL.query.await([[
+        SELECT ba.id, ba.account_name, ba.owner, ba.balance,
+            (SELECT MAX(ABS(bt2.amount)) FROM bank_transactions bt2
+             WHERE bt2.account_id = ba.id
+             AND bt2.created_at >= DATE_SUB(NOW(), INTERVAL ? HOUR)) as max_recent_tx
+        FROM bank_accounts ba
+        WHERE ba.balance <= 0
+        AND EXISTS (
+            SELECT 1 FROM bank_transactions bt
+            WHERE bt.account_id = ba.id
+            AND bt.amount < -1000
+            AND bt.created_at >= DATE_SUB(NOW(), INTERVAL ? HOUR)
+        )
+        LIMIT 20
+    ]], { AlertThresholds.RecentHoursWindow, AlertThresholds.RecentHoursWindow })
+
+    for _, acc in ipairs(drainedAccounts or {}) do
+        table.insert(alerts, {
+            type = 'drained_account',
+            severity = 'warning',
+            accountId = acc.id,
+            accountName = acc.account_name,
+            owner = acc.owner,
+            balance = acc.balance,
+            maxRecentTx = acc.max_recent_tx,
+            date = os.date('%Y-%m-%d %H:%M:%S'),
+        })
+    end
+
+    local severityOrder = { critical = 1, warning = 2, info = 3 }
+    table.sort(alerts, function(a, b)
+        return (severityOrder[a.severity] or 9) < (severityOrder[b.severity] or 9)
+    end)
+
+    return alerts
+end)
+
 lib.callback.register('muhaddil_bank:getAdminData', function(source)
     if not hasPermission(source) then return nil end
 
@@ -270,36 +446,121 @@ end)
 
 lib.callback.register('muhaddil_bank:adminSearchUser', function(source, searchQuery)
     if not hasPermission(source) then return nil end
-
     if not searchQuery or searchQuery == '' then return nil end
 
-    local targetId = tonumber(searchQuery)
+    local searchLower = string.lower(searchQuery)
     local targetIdentifier = nil
 
+    local targetId = tonumber(searchQuery)
     if targetId then
-        targetIdentifier = GetPlayerIdentifier(targetId)
-    else
-        targetIdentifier = searchQuery
+        local identifier = GetPlayerIdentifier(targetId)
+        if identifier then
+            targetIdentifier = identifier
+        end
+    end
+
+    if not targetIdentifier then
+        for _, playerId in ipairs(GetPlayers()) do
+            local identifier = GetPlayerIdentifier(playerId)
+            if not identifier then goto continue end
+
+            local playerName = GetPlayerName(playerId)
+            if playerName and string.lower(playerName):find(searchLower, 1, true) then
+                targetIdentifier = identifier
+                break
+            end
+
+            if FrameWork == 'esx' then
+                local xPlayer = ESX.GetPlayerFromId(playerId)
+                if xPlayer then
+                    local name = (xPlayer.getName and xPlayer.getName()) or xPlayer.name
+                    if name and string.lower(name):find(searchLower, 1, true) then
+                        targetIdentifier = identifier
+                        break
+                    end
+                end
+            end
+
+            if FrameWork == 'qb' then
+                local Player = QBCore.Functions.GetPlayer(playerId)
+                if Player and Player.PlayerData and Player.PlayerData.charinfo then
+                    local ci = Player.PlayerData.charinfo
+                    local fullName = string.format('%s %s', ci.firstname or '', ci.lastname or ''):lower()
+                    if fullName:find(searchLower, 1, true) then
+                        targetIdentifier = identifier
+                        break
+                    end
+                end
+            end
+
+            ::continue::
+        end
+    end
+
+    if not targetIdentifier then
+        if FrameWork == 'esx' then
+            local result = MySQL.single.await([[
+                SELECT identifier FROM users
+                WHERE LOWER(CONCAT(firstname, ' ', lastname)) LIKE ?
+                LIMIT 1
+            ]], { '%' .. searchLower .. '%' })
+
+            if result then
+                targetIdentifier = result.identifier
+            end
+
+        elseif FrameWork == 'qb' then
+            local result = MySQL.single.await([[
+                SELECT citizenid FROM players
+                WHERE LOWER(CONCAT(
+                    JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname')),
+                    ' ',
+                    JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname'))
+                )) LIKE ?
+                LIMIT 1
+            ]], { '%' .. searchLower .. '%' })
+
+            if result then
+                targetIdentifier = result.citizenid
+            end
+        end
     end
 
     if not targetIdentifier then
         return { error = Locale('server.player_not_found') }
     end
 
-    local accounts = MySQL.query.await('SELECT * FROM bank_accounts WHERE owner = ?', { targetIdentifier })
-    local loans = MySQL.query.await('SELECT * FROM bank_loans WHERE user_identifier = ? ORDER BY created_at DESC',
-        { targetIdentifier })
+    local accounts = MySQL.query.await(
+        'SELECT * FROM bank_accounts WHERE owner = ?',
+        { targetIdentifier }
+    )
+
+    local loans = MySQL.query.await(
+        'SELECT * FROM bank_loans WHERE user_identifier = ? ORDER BY created_at DESC',
+        { targetIdentifier }
+    )
+
     local savings = MySQL.query.await([[
         SELECT bsa.*, ba.account_name
         FROM bank_savings_accounts bsa
         INNER JOIN bank_accounts ba ON bsa.account_id = ba.id
         WHERE bsa.owner = ?
     ]], { targetIdentifier })
-    local contacts = MySQL.query.await('SELECT * FROM bank_contacts WHERE owner = ?', { targetIdentifier })
-    local scheduled = MySQL.query.await('SELECT * FROM bank_scheduled_transfers WHERE owner = ?', { targetIdentifier })
+
+    local contacts = MySQL.query.await(
+        'SELECT * FROM bank_contacts WHERE owner = ?',
+        { targetIdentifier }
+    )
+
+    local scheduled = MySQL.query.await(
+        'SELECT * FROM bank_scheduled_transfers WHERE owner = ?',
+        { targetIdentifier }
+    )
+
     local creditScore = GetPlayerCreditScore(targetIdentifier)
 
     local transactions = {}
+
     for _, acc in ipairs(accounts or {}) do
         local accTx = MySQL.query.await([[
             SELECT * FROM bank_transactions
@@ -307,6 +568,7 @@ lib.callback.register('muhaddil_bank:adminSearchUser', function(source, searchQu
             ORDER BY created_at DESC
             LIMIT 50
         ]], { acc.id })
+
         for _, tx in ipairs(accTx or {}) do
             tx.account_name = acc.account_name
             table.insert(transactions, tx)
@@ -391,15 +653,12 @@ RegisterNetEvent('muhaddil_bank:adminFreezeAccount', function(accountId)
     accountId = tonumber(accountId)
     if not accountId then return end
 
-    local balance = MySQL.scalar.await('SELECT balance FROM bank_accounts WHERE id = ?', { accountId })
-    if balance then
-        MySQL.query.await('UPDATE bank_accounts SET balance = 0 WHERE id = ?', { accountId })
-        MySQL.insert.await(
-            'INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)',
-            { accountId, 'admin_freeze', -tonumber(balance), Locale('admin.admin_freeze_desc') }
-        )
-        Notify(src, 'success', Locale('admin.account_frozen_id', accountId))
-        print(string.format("^2[ADMIN] %s congeló cuenta #%d^7", GetPlayerName(src), accountId))
+    local account = MySQL.single.await('SELECT * FROM bank_accounts WHERE id = ?', { accountId })
+    if account then
+        local newFrozenStatus = not (account.frozen or false)
+        MySQL.query.await('UPDATE bank_accounts SET frozen = ? WHERE id = ?', { newFrozenStatus and 1 or 0, accountId })
+        Notify(src, 'success', newFrozenStatus and Locale('admin.account_frozen_id', accountId) or Locale('admin.account_unfrozen_id', accountId))
+        print(string.format("^2[ADMIN] %s %s cuenta #%d^7", GetPlayerName(src), newFrozenStatus and 'congeló' or 'descongeló', accountId))
     end
 end)
 

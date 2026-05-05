@@ -84,6 +84,10 @@ RegisterNetEvent('muhaddil_bank:depositSavings', function(data)
         'SELECT balance FROM bank_accounts WHERE id = ?', { savings.account_id }
     ))
 
+    if IsAccountFrozen(savings.account_id) then
+        return Notify(src, 'error', Locale('server.account_frozen'))
+    end
+
     if not balance or balance < amount then
         return Notify(src, 'error', Locale('server.insufficient_balance'))
     end
