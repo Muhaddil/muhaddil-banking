@@ -33,6 +33,8 @@
     "maxAccountsReached": "Has alcanzado el límite de {max} cuentas",
     "loading_bank": "Cargando banco...",
     "loading_bank_subtitle": "Por favor espera",
+    "loading_stats": "Cargando estadísticas...",
+    "loading_stats_subtitle": "Por favor espera mientras se calculan las estadísticas de tu cuenta",
     "bankInfo": {
       "associated": "Banco Asociado",
       "commission": "Tasa de Comisión",
@@ -477,7 +479,8 @@
     "scheduled_transfer_transaction_received": "Transferencia programada recibida: #{0} - {1}",
     "account_frozen": "La cuenta está congelada",
     "account_unfreeze_desc": "El usuario podrá volver a operar con normalidad.",
-    "account_freeze_desc": "El usuario no podrá realizar operaciones mientras la cuenta esté bloqueada."
+    "account_freeze_desc": "El usuario no podrá realizar operaciones mientras la cuenta esté bloqueada.",
+    "check_fake_detected": "¡Cheque FALSO detectado! El cheque ha sido confiscado."
   },
   "client": {
     "bank_connection_error": "Error al conectar con el banco",

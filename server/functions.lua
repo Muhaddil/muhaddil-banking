@@ -250,9 +250,6 @@ MySQL.ready(function()
                 INDEX `idx_identifier` (`identifier`),
                 INDEX `idx_check_code` (`check_code`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        ]],
-        [[
-            ALTER TABLE `bank_accounts` ADD COLUMN `frozen` TINYINT (1) DEFAULT 0 AFTER `balance`;
         ]]
     }
 
@@ -306,17 +303,32 @@ MySQL.ready(function()
     end
 
     local hasIssuerName = MySQL.scalar.await([[
-    SELECT COUNT(*)
-    FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = 'bank_checks'
-      AND COLUMN_NAME = 'issuer_name'
-]])
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'bank_checks'
+          AND COLUMN_NAME = 'issuer_name'
+    ]])
 
     if tonumber(hasIssuerName) == 0 then
         MySQL.query.await([[
         ALTER TABLE bank_checks
         ADD COLUMN issuer_name VARCHAR(100) DEFAULT NULL
+    ]])
+    end
+
+    local hasFrozenColumn = MySQL.scalar.await([[
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'bank_accounts'
+          AND COLUMN_NAME = 'frozen'
+    ]])
+
+    if tonumber(hasFrozenColumn) == 0 then
+        MySQL.query.await([[
+        ALTER TABLE `bank_accounts`
+        ADD COLUMN `frozen` TINYINT(1) DEFAULT 0 AFTER `balance`
     ]])
     end
 

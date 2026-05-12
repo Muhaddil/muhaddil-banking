@@ -1,10 +1,12 @@
 "use client"
 
 import type React from "react"
+import { useState, useEffect } from "react"
 import { Card } from "./ui/Card"
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts"
 import { TrendingUp, TrendingDown, DollarSign, Activity } from "lucide-react"
 import { useLocale } from "../hooks/useLocale"
+import { createPortal } from "react-dom"
 
 interface StatsViewProps {
     data: any[]
@@ -19,8 +21,40 @@ const StatsView: React.FC<StatsViewProps> = ({ data, totalIncome, totalExpense, 
     const netFlow = totalIncome - totalExpense
     const isPositive = netFlow >= 0
 
+    const [tooltip, setTooltip] = useState<{
+        text: string
+        x: number
+        y: number
+    } | null>(null)
+
+    const showTooltip = (e: React.MouseEvent, text: string) => {
+        setTooltip({
+            text,
+            x: e.clientX,
+            y: e.clientY
+        })
+    }
+
+    const hideTooltip = () => setTooltip(null)
+
     const hasTransactions = data.length > 0
     const hasFinancialActivity = totalIncome > 0 || totalExpense > 0
+
+    const formatCurrency = (value: number): string => {
+        const abs = Math.abs(value)
+        if (abs >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`
+        if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`
+        if (abs >= 1_000) return `$${(value / 1_000).toFixed(1)}K`
+        return `$${value.toLocaleString()}`
+    }
+
+    const getFontSize = (value: number): string => {
+        const len = formatCurrency(value).length
+        if (len > 12) return "text-lg"
+        if (len > 9) return "text-xl"
+        if (len > 7) return "text-2xl"
+        return "text-3xl"
+    }
 
     if (!hasTransactions && !hasFinancialActivity) {
         return (
@@ -75,7 +109,7 @@ const StatsView: React.FC<StatsViewProps> = ({ data, totalIncome, totalExpense, 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 shadow-xl shadow-blue-500/30">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-8 -mt-8" />
-                    <div className="relative z-10">
+                    <div className="relative z-10 min-w-0">
                         <div className="flex items-center justify-between mb-3">
                             <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
                                 <DollarSign size={24} className="text-white" />
@@ -83,13 +117,18 @@ const StatsView: React.FC<StatsViewProps> = ({ data, totalIncome, totalExpense, 
                             <Activity size={40} className="text-white/20" />
                         </div>
                         <p className="text-blue-100 text-sm mb-1 font-medium">{t("stats.currentBalance")}</p>
-                        <p className="text-3xl font-bold text-white">${currentBalance.toLocaleString()}</p>
+                        <p className={`${getFontSize(currentBalance)} font-bold text-white truncate cursor-help`}
+                            onMouseEnter={(e) => showTooltip(e, `$${currentBalance.toLocaleString()}`)}
+                            onMouseMove={(e) => showTooltip(e, `$${currentBalance.toLocaleString()}`)}
+                            onMouseLeave={hideTooltip}>
+                            {formatCurrency(currentBalance)}
+                        </p>
                     </div>
                 </div>
 
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 shadow-xl shadow-emerald-500/30">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-8 -mt-8" />
-                    <div className="relative z-10">
+                    <div className="relative z-10 min-w-0">
                         <div className="flex items-center justify-between mb-3">
                             <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
                                 <TrendingUp size={24} className="text-white" />
@@ -97,13 +136,18 @@ const StatsView: React.FC<StatsViewProps> = ({ data, totalIncome, totalExpense, 
                             <TrendingUp size={40} className="text-white/20" />
                         </div>
                         <p className="text-emerald-100 text-sm mb-1 font-medium">{t("stats.totalIncome")}</p>
-                        <p className="text-3xl font-bold text-white">${totalIncome.toLocaleString()}</p>
+                        <p className={`${getFontSize(totalIncome)} font-bold text-white truncate cursor-help`}
+                            onMouseEnter={(e) => showTooltip(e, `$${totalIncome.toLocaleString()}`)}
+                            onMouseMove={(e) => showTooltip(e, `$${totalIncome.toLocaleString()}`)}
+                            onMouseLeave={hideTooltip}>
+                            {formatCurrency(totalIncome)}
+                        </p>
                     </div>
                 </div>
 
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-red-500 to-red-600 p-6 shadow-xl shadow-red-500/30">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-8 -mt-8" />
-                    <div className="relative z-10">
+                    <div className="relative z-10 min-w-0">
                         <div className="flex items-center justify-between mb-3">
                             <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
                                 <TrendingDown size={24} className="text-white" />
@@ -111,7 +155,12 @@ const StatsView: React.FC<StatsViewProps> = ({ data, totalIncome, totalExpense, 
                             <TrendingDown size={40} className="text-white/20" />
                         </div>
                         <p className="text-red-100 text-sm mb-1 font-medium">{t("stats.totalExpenses")}</p>
-                        <p className="text-3xl font-bold text-white">${totalExpense.toLocaleString()}</p>
+                        <p className={`${getFontSize(totalExpense)} font-bold text-white truncate cursor-help`}
+                            onMouseEnter={(e) => showTooltip(e, `$${totalExpense.toLocaleString()}`)}
+                            onMouseMove={(e) => showTooltip(e, `$${totalExpense.toLocaleString()}`)}
+                            onMouseLeave={hideTooltip}>
+                            {formatCurrency(totalExpense)}
+                        </p>
                     </div>
                 </div>
 
@@ -122,7 +171,7 @@ const StatsView: React.FC<StatsViewProps> = ({ data, totalIncome, totalExpense, 
                         }`}
                 >
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-8 -mt-8" />
-                    <div className="relative z-10">
+                    <div className="relative z-10 min-w-0">
                         <div className="flex items-center justify-between mb-3">
                             <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
                                 {isPositive ? (
@@ -136,8 +185,11 @@ const StatsView: React.FC<StatsViewProps> = ({ data, totalIncome, totalExpense, 
                         <p className={`text-sm mb-1 font-medium ${isPositive ? "text-purple-100" : "text-orange-100"}`}>
                             {t("stats.netFlow")}
                         </p>
-                        <p className="text-3xl font-bold text-white">
-                            {isPositive ? "+" : ""}${Math.abs(netFlow).toLocaleString()}
+                        <p className={`${getFontSize(netFlow)} font-bold text-white truncate cursor-help`}
+                            onMouseEnter={(e) => showTooltip(e, `${isPositive ? "+" : "-"}$${Math.abs(netFlow).toLocaleString()}`)}
+                            onMouseMove={(e) => showTooltip(e, `${isPositive ? "+" : "-"}$${Math.abs(netFlow).toLocaleString()}`)}
+                            onMouseLeave={hideTooltip}>
+                            {isPositive ? "+" : "-"}{formatCurrency(Math.abs(netFlow))}
                         </p>
                     </div>
                 </div>
@@ -192,6 +244,23 @@ const StatsView: React.FC<StatsViewProps> = ({ data, totalIncome, totalExpense, 
                     )}
                 </div>
             </Card>
+            {tooltip &&
+                createPortal(
+                    <div
+                        className="fixed z-[99999] px-3 py-1.5 rounded-lg bg-gray-900 text-white text-sm font-medium shadow-xl border border-white/10 pointer-events-none"
+                        style={{
+                            top: `${tooltip.y}px`,
+                            left: `${tooltip.x}px`,
+                            transform: "translate(-50%, calc(-100% - 12px))",
+                            whiteSpace: "nowrap",
+                        }}
+                    >
+                        {tooltip.text}
+
+                        <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                    </div>,
+                    document.body
+                )}
         </div>
     )
 }

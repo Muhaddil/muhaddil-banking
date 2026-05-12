@@ -280,7 +280,7 @@ export const CheckManager: React.FC<CheckManagerProps> = ({
                                             </p>
                                             {check.issuer_name && (
                                                 <p className="text-[rgb(var(--text-muted))] text-xs">
-                                                    Firmado por: {check.issuer_name}
+                                                    {t("checksStandaloneViewer.issuer") || "Firmado por"}: {check.issuer_name}
                                                 </p>
                                             )}
                                             <p className="text-[rgb(var(--text-muted))] text-xs mt-1">

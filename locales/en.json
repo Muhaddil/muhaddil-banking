@@ -33,6 +33,8 @@
     "maxAccountsReached": "You have reached the limit of {max} accounts",
     "loading_bank": "Loading bank...",
     "loading_bank_subtitle": "Please wait",
+    "loading_stats": "Loading statistics...",
+    "loading_stats_subtitle": "Please wait while we calculate your account statistics",
     "bankInfo": {
       "associated": "Associated Bank",
       "commission": "Commission Rate",
@@ -477,7 +479,8 @@
     "check_forge_no_data": "There is insufficient information to forge the check",
     "scheduled_transfer_transaction": "Scheduled Transfer: #{0} - {1}",
     "scheduled_transfer_transaction_received": "Scheduled Transfer Received: #{0} - {1}",
-    "account_frozen": "The account is frozen"
+    "account_frozen": "The account is frozen",
+    "check_fake_detected": "Counterfeit check detected! The check has been confiscated."
   },
   "client": {
     "bank_connection_error": "Error connecting to bank",

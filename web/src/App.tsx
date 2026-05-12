@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useCallback, useEffect, Suspense, lazy } from "react"
+import React, { useState, useRef, useCallback, useEffect, Suspense, lazy } from "react"
 import { fetchNui } from "./utils/fetchNui"
 import { useNuiEvent } from "./hooks/useNuiEvent"
 import toast, { Toaster } from "react-hot-toast"
@@ -207,6 +207,46 @@ const LoadingOverlay: React.FC = () => {
   )
 }
 
+const StatsLoadingOverlay: React.FC = () => {
+  const { t } = useLocale()
+  return (
+    <div className="flex-1 flex items-center justify-center h-full">
+      <div className="flex flex-col items-center gap-5">
+        <div className="relative w-20 h-20">
+          <div className="absolute inset-0 rounded-full border-4 border-white/10" />
+          <div className="absolute inset-0 rounded-full border-4 border-t-indigo-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+          <div className="absolute inset-2 rounded-full border-4 border-t-transparent border-r-transparent border-b-indigo-300/50 border-l-transparent animate-spin [animation-direction:reverse] [animation-duration:600ms]" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <svg className="w-7 h-7 text-indigo-400 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M3 18l4-8 4 4 4-6 4 10" />
+            </svg>
+          </div>
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <p className="text-white font-semibold text-lg tracking-wide animate-pulse">
+            {t("dashboard.loading_stats")}
+          </p>
+          <p className="text-white/40 text-sm">{t("dashboard.loading_stats_subtitle")}</p>
+        </div>
+        <div className="flex items-end gap-1.5 h-10">
+          {[40, 65, 35, 80, 50, 90, 45].map((h, i) => (
+            <div
+              key={i}
+              className="w-3 bg-indigo-500/40 rounded-sm animate-pulse"
+              style={{
+                height: `${h}%`,
+                animationDelay: `${i * 120}ms`,
+                animationDuration: "900ms",
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const AppContent: React.FC<AppContentProps> = ({
   visible,
   setVisible,
@@ -227,6 +267,25 @@ const AppContent: React.FC<AppContentProps> = ({
 }) => {
   const { t } = useLocale()
   const cashAvailable = data.playerMoney ?? 0
+  const statsLoadedOnce = useRef(false)
+  const [statsReady, setStatsReady] = useState(false)
+
+  useEffect(() => {
+    if (activeTab === "stats") {
+      if (statsLoadedOnce.current) {
+        setStatsReady(true)
+        return
+      }
+
+      setStatsReady(false)
+      import("./components/StatsView").then(() => {
+        setTimeout(() => {
+          setStatsReady(true)
+          statsLoadedOnce.current = true
+        }, 1000)
+      })
+    }
+  }, [activeTab])
 
   useEffect(() => {
     if (activeTab === "banks" && !data.bankManagementEnabled) {
@@ -335,8 +394,10 @@ const AppContent: React.FC<AppContentProps> = ({
                 )}
 
                 {activeTab === "stats" && (
-                  <Suspense fallback={<div className="text-white">Loading stats...</div>}>
-                    {selectedAccount ? (
+                  <Suspense fallback={<StatsLoadingOverlay />}>
+                    {!statsReady ? (
+                      <StatsLoadingOverlay />
+                    ) : selectedAccount ? (
                       <StatsView
                         data={getChartData()}
                         totalIncome={getTotalIncome()}
@@ -344,12 +405,7 @@ const AppContent: React.FC<AppContentProps> = ({
                         currentBalance={parseFloat(selectedAccount?.balance ?? "0")}
                       />
                     ) : (
-                      <StatsView
-                        data={[]}
-                        totalIncome={0}
-                        totalExpense={0}
-                        currentBalance={0}
-                      />
+                      <StatsView data={[]} totalIncome={0} totalExpense={0} currentBalance={0} />
                     )}
                   </Suspense>
                 )}
