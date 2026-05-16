@@ -1,257 +1,105 @@
-# 🏦 Sistema Bancario Muhaddil - Guía de Uso (README Creado con IA)
+# 🏦 muhaddil-banking
 
-## 📋 Descripción
+A comprehensive and modern banking system for FiveM with support for multiple accounts, loans, private banks, and more.
 
-Sistema bancario completo para FiveM con múltiples cuentas, préstamos, transferencias y gestión de bancos privados.
+## 💳 Features
 
-## ✅ Instalación
+- **Multiple Accounts**: Players can create and manage multiple personal and shared accounts.
+- **Private Banks**: Ability to purchase and manage banks, earning commissions on transactions in the area.
+- **Loan System**: Flexible loans with configurable interest rates, installments, and credit scoring.
+- **Direct Debits**: Set up recurring payments for services, subscriptions, or shared expenses.
+- **ATM & Cards**: Integrated ATM system with physical debit cards, PIN management, and blocking features.
+- **Checks & Transfers**: Write physical checks or transfer money instantly using unique account IDs.
+- **Framework Support**: Automatically detects and works with **ESX** and **QB-Core**.
+- **Admin Panel**: Powerful in-game tools for managing accounts, loans, and monitoring transactions.
 
-### 1. Requisitos
+## 🌟 Preview
 
-- **ox_lib** - Para notificaciones y callbacks
-- **oxmysql** - Para base de datos
-- **ESX** o **QBCore** - Framework (detección automática)
+Watch the video preview of the banking system in action:
 
-### 2. Instalación
+https://youtu.be/rdEg3VhTgkI
 
-1. Coloca `muhaddil-banking` en tu carpeta `resources`
-2. Añade `ensure muhaddil-banking` a tu `server.cfg`
-3. La base de datos se crea automáticamente al iniciar
+## 📋 Requirements
 
-### 3. Configuración
+- [ox_lib](https://github.com/CommunityOx/ox_lib)
+- [oxmysql](https://github.com/CommunityOx/oxmysql)
+- [es_extended](https://github.com/esx-framework/esx_core) OR [qb-core](https://github.com/qbcore-framework/qb-core)
 
-Edita `config.lua` según tus necesidades:
+## 🚀 Installation
 
-- Framework (detecta automáticamente ESX/QBCore)
-- Comando para abrir banco (default: `/banco`)
-- Límites de cuentas, préstamos, etc.
+1. Download the resource.
+2. Extract it into your `resources` folder.
+3. Add `ensure muhaddil-banking` to your `server.cfg`.
+4. The database tables will be created automatically on the first start (or use `install.sql`).
+5. Configure the settings in `shared/config.lua` to match your server's needs.
 
-## 🎮 Uso para Jugadores
+## 🎮 Usage
 
-### Abrir el Banco
-
-- **Opción 1:** Acércate a cualquier ubicación de banco (verás un marcador azul)
-- **Opción 2:** Usa el comando `/banco`
-
-### Gestión de Cuentas
-
-#### Primera Vez
-
-Al abrir el banco por primera vez, se creará automáticamente una **"Cuenta Principal"** con $0 de balance.
-
-#### Crear Más Cuentas
-
-1. Haz clic en **"Nueva Cuenta"**
-2. Ingresa un nombre descriptivo
-3. Confirma
-4. Límite: **5 cuentas por jugador**
-
-#### Compartir Cuentas
-
-1. Selecciona la cuenta que deseas compartir
-2. Haz clic en **"Añadir Usuario"**
-3. Ingresa el **ID del jugador** en el servidor
-4. El usuario tendrá acceso completo a la cuenta
-5. Límite: **5 usuarios compartidos por cuenta**
-
-### Operaciones Bancarias
-
-#### Depositar
-
-1. Selecciona la cuenta
-2. Haz clic en **"Depositar"**
-3. Ingresa el monto (debe estar en efectivo)
-4. Confirma
-
-#### Retirar
-
-1. Selecciona la cuenta
-2. Haz clic en **"Retirar"**
-3. Ingresa el monto (debe haber saldo suficiente)
-4. Confirma
-
-#### Transferir
-
-1. Selecciona la cuenta origen
-2. Haz clic en **"Transferir"**
-3. Ingresa:
-   - Monto a transferir
-   - **ID de la cuenta destino** (número visible en cada cuenta)
-4. Confirma
-
-### Préstamos
-
-#### Solicitar Préstamo
-
-1. Ve a la pestaña **"Préstamos"**
-2. Haz clic en **"Solicitar Préstamo"**
-3. Configura:
-   - **Monto:** $1,000 - $500,000
-   - **Cuotas:** 1-12 meses
-   - **Interés:** 5% fijo
-4. Confirma
-5. **Importante:** Solo puedes tener 1 préstamo activo a la vez
-
-#### Pagar Préstamo
-
-1. Ve a la pestaña **"Préstamos"**
-2. Selecciona tu préstamo activo
-3. Haz clic en **"Pagar Cuota"**
-4. El monto se descontará de tu efectivo
-5. Puedes pagar por partes o todo de una vez
-
-### Comprar Bancos
-
-#### Inversión
-
-1. Ve a la pestaña **"Bancos"**
-2. Haz clic en **"Comprar Ahora"**
-3. Precio: **$1,000,000**
-4. Límite: **3 bancos por jugador**
-
-#### Beneficios
-
-- Ganas **1% de comisión** en todas las transacciones de tu zona
-- Ingresos pasivos
-- Se registran en "Ganancias Totales"
-
-## 👨‍💼 Comandos de Admin
-
-### Ver Información
+Players can access the banking system through physical bank locations, ATMs, or via command:
 
 ```bash
-/bankadmin                    # Ver top 50 cuentas del servidor
-/bankinfo [ID cuenta]         # Ver detalles de una cuenta específica
-/bankloans                    # Ver todos los préstamos activos
+/banco
 ```
 
-### Gestión de Dinero
+### Admin Commands:
 
-```bash
-/bankaddmoney [ID cuenta] [monto]     # Añadir dinero a una cuenta
-/bankremovemoney [ID cuenta] [monto]  # Remover dinero de una cuenta
-```
+- `/bankadmin`: Opens the comprehensive administration panel.
+- `/bankinfo [accountId]`: View detailed information and history of a specific account.
+- `/bankloans`: Monitor all active loans in the server.
+- `/bankreset [playerId]`: Reset all banking data for a specific player.
 
-### Gestión de Préstamos
+## ⚙️ Configuration
 
-```bash
-/bankcancelloan [ID préstamo]   # Cancelar un préstamo
-```
+You can customize the core behavior in `shared/config.lua`:
+## 🛠️ Exports
 
-### Resetear
+The script provides extensive exports for integration with other resources:
 
-```bash
-/bankreset [ID jugador]         # Elimina todas las cuentas y préstamos del jugador
-```
+### Server-side
 
-## 🗺️ Ubicaciones de Bancos
+#### 📂 Core & Transactions
+- `exports['muhaddil-banking']:Transfer(source, fromId, toId, amount, bankLocation)`: Triggers a transfer between accounts.
+- `exports['muhaddil-banking']:GetTotalBankBalance(identifier)`: Returns total balance across all accounts for a player.
+- `exports['muhaddil-banking']:AddMoneyToAccount(accountId, amount, reason)`: Programmatically add funds to an account.
+- `exports['muhaddil-banking']:RemoveMoneyFromAccount(accountId, amount, reason)`: Programmatically remove funds from an account.
+- `exports['muhaddil-banking']:SyncFrameworkBank(playerId)`: Forces a balance synchronization with the active framework.
+- `exports['muhaddil-banking']:ResolveAccountId(input)`: Resolves an IBAN or numeric ID to an account ID.
 
-Por defecto incluye 4 ubicaciones:
+#### 💳 Cards System
+- `exports['muhaddil-banking']:HasCard(source)`: Returns whether the player has at least one bank card.
+- `exports['muhaddil-banking']:GetPlayerCards(source)`: Returns a list of all cards owned by the player.
+- `exports['muhaddil-banking']:CreateCard(source, accountId, pin)`: Generates a new physical card for an account.
+- `exports['muhaddil-banking']:ToggleCardBlock(source, cardId, block)`: Blocks or unblocks a specific bank card.
+- `exports['muhaddil-banking']:ChangeCardPin(source, cardId, currentPin, newPin)`: Updates the PIN for a card.
+- `exports['muhaddil-banking']:DeleteCard(source, cardId)`: Permanently removes a card.
 
-1. **Banco Central** - Legion Square
-2. **Paleto Bay Bank** - Paleto Bay
-3. **Great Ocean Highway** - West LS
-4. **Pacific Standard Bank** - Alta
+#### 🏦 Bank Management (Private Banks)
+- `exports['muhaddil-banking']:GetBankDetails(source, bankId)`: Returns ownership and configuration details of a bank.
+- `exports['muhaddil-banking']:UpdateBankCommission(source, bankId, newRate)`: Updates the transaction commission for a bank.
+- `exports['muhaddil-banking']:WithdrawBankEarnings(source, bankId)`: Withdraws the accumulated profit from a bank.
+- `exports['muhaddil-banking']:SellBank(source, bankId)`: Sells the bank ownership.
+- `exports['muhaddil-banking']:TransferBank(source, bankId, targetPlayerId)`: Transfers ownership to another player.
 
-Puedes añadir más en `config.lua`.
+#### 🔄 Recurring Payments & Loans
+- `exports['muhaddil-banking']:RegisterDirectDebit(identifier, accountId, creditor, amount, frequency)`: Sets up a recurring payment.
+- `exports['muhaddil-banking']:CancelDirectDebitById(debitId)`: Cancels an active direct debit.
+- `exports['muhaddil-banking']:GetPlayerCreditScore(identifier)`: Returns the current credit score for a player.
 
-## 🔧 Solución de Problemas
+#### 🛡️ Administration
+- `exports['muhaddil-banking']:GetTopAccounts(limit)`: Returns a list of the richest accounts.
+- `exports['muhaddil-banking']:GetActiveLoans()`: Returns all currently active loans in the server.
+- `exports['muhaddil-banking']:CancelLoan(loanId)`: Administratively cancels a loan.
+- `exports['muhaddil-banking']:GetAccountInfo(accountId)`: Returns full administrative details of an account.
+- `exports['muhaddil-banking']:ResetPlayerBank(identifier)`: Completely resets all banking data for a player.
 
-### No puedo abrir el banco
+### Client-side
 
-- Verifica que `ox_lib` esté iniciado
-- Asegúrate de estar cerca de un banco (o usa `/banco`)
-- Revisa la consola F8 para errores
-
-### No se crean las cuentas
-
-- Verifica que `oxmysql` esté funcionando
-- Revisa la consola del servidor
-- Asegúrate de que el recurso tenga permisos de base de datos
-
-### Los préstamos no aparecen
-
-- Espera unos segundos después de solicitar
-- Cierra y abre el banco de nuevo
-- Verifica con `/bankloans` que se haya creado
-
-### Error de framework
-
-- El sistema detecta automáticamente ESX o QBCore
-- Si usas un framework custom, edita `config.lua`:
-  ```lua
-  Config.FrameWork = 'esx' -- o 'qb'
-  ```
-
-## 📊 Estadísticas
-
-La pestaña **"Estadísticas"** muestra:
-
-- **Balance Actual** de la cuenta seleccionada
-- **Ingresos Totales** (últimos 7 días)
-- **Gastos Totales** (últimos 7 días)
-- **Gráfico** de actividad diaria
-
-## 🔐 Seguridad
-
-El sistema incluye:
-
-- ✅ Validación de permisos en cada operación
-- ✅ Verificación de saldo antes de transacciones
-- ✅ Protección contra exploits
-- ✅ Logging de todas las transacciones
-- ✅ Límites configurables
-
-## 🎯 Características Futuras (Opcionales)
-
-En `config.lua` puedes habilitar sistemas opcionales (requieren implementación):
-
-### ATMs (Cajeros Automáticos)
-
-```lua
-Config.ATMs.Enabled = true
-```
-
-- Retiros desde cajeros en el mapa
-- Comisión por uso
-- Límite de retiro
-
-### Sistema de Tarjetas
-
-```lua
-Config.Cards.Enabled = true
-```
-
-- Tarjetas de débito físicas
-- Límites diarios
-- Requeridas para ATMs
-
-### Sistema de Intereses
-
-```lua
-Config.Interest.Enabled = true
-```
-
-- Ganancias por ahorros
-- 0.1% diario
-- Balance mínimo de $10,000
-
-### Sistema de Cheques
-
-```lua
-Config.Checks.Enabled = true
-```
-
-- Cheques físicos transferibles
-- Expiran en 7 días
-- Comisión por crear
-
-## 📞 Soporte
-
-Para reportar bugs o sugerencias, contacta al desarrollador.
-
----
-
-**Versión:** 1.0.0  
-**Autor:** Muhaddil  
-**Licencia:** MIT
+- `exports['muhaddil-banking']:OpenBankById(bankId)`: Opens the banking UI for a specific bank location.
+- `exports['muhaddil-banking']:OpenNearestBank()`: Opens the UI for the closest bank location.
+- `exports['muhaddil-banking']:CloseBank()`: Closes the banking UI.
+- `exports['muhaddil-banking']:IsBankOpen()`: Returns whether the banking UI is currently open.
+- `exports['muhaddil-banking']:GetCurrentBank()`: Returns information about the currently open bank location.
+- `exports['muhaddil-banking']:OpenATM()`: Opens the ATM interface.
+- `exports['muhaddil-banking']:IsATMOpen()`: Returns whether the ATM interface is open.
+- `exports['muhaddil-banking']:useCheck(data)`: Triggers the logic for using a physical check.
+- `exports['muhaddil-banking']:HasStolenCard()`: Checks if the player is carrying a reported stolen card.
