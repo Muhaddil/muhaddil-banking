@@ -22,7 +22,7 @@ if Config.FrameWork == "auto" then
         QBCore = exports['qb-core']:GetCoreObject()
         FrameWork = 'qb'
     else
-        print('===NO SUPPORTED FRAMEWORK FOUND===')
+        print(Locale('admin.noFramework'))
     end
 elseif Config.FrameWork == "esx" and GetResourceState('es_extended') == 'started' then
     if ESXVer == 'new' then
@@ -39,7 +39,7 @@ elseif Config.FrameWork == "qb" and GetResourceState('qb-core') == 'started' the
     QBCore = exports['qb-core']:GetCoreObject()
     FrameWork = 'qb'
 else
-    print('===NO SUPPORTED FRAMEWORK FOUND===')
+    print(Locale('admin.noFramework'))
 end
 
 MySQL.ready(function()

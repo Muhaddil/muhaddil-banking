@@ -69,7 +69,9 @@
       "feature2Desc": "Comparte cuentas con otros usuarios",
       "feature3": "Estadísticas detalladas",
       "feature3Desc": "Visualiza tu actividad financiera"
-    }
+    },
+    "activeAccountsCount": "{count} cuenta{plural} activa{plural}",
+    "sharedAccountsCount": "{count} cuenta{plural} compartida{plural}"
   },
   "quickActions": {
     "deposit": "Depositar",
@@ -474,6 +476,7 @@
     "check_item_title": "Cheque {0} — ${1}",
     "check_item_description": "Firmado por: {0}\nMonto: ${1}\nConcepto: {2}\nExpira: {3}",
     "check_forge_failed_print": "^3[Bank] Intento de falsificación fallido. Jugador: {0} | Código intentado: {1} | Monto: ${2}",
+    "check_forge_failed": "No se pudo falsificar el cheque",
     "check_forge_no_data": "Faltan datos para falsificar el cheque",
     "scheduled_transfer_transaction": "Transferencia programada: #{0} - {1}",
     "scheduled_transfer_transaction_received": "Transferencia programada recibida: #{0} - {1}",
@@ -707,6 +710,7 @@
     "cancelRequest": "Rechazar solicitud",
     "cancelRequestDesc": "La solicitud de pago será rechazada y notificada al usuario.",
     "addFunds": "Añadir fondos",
+    "withdrawFunds": "Retirar fondos",
     "removeFunds": "Retirar fondos",
     "freezeAccount": "Bloquear cuenta",
     "unfreezeAccount": "Desbloquear cuenta",
@@ -755,7 +759,40 @@
     "viewAll": "Ver todas",
     "refreshAdmin": "Actualizar",
     "dismiss": "Descartar",
-    "actionsRecordedInSession": "acciones registradas en esta sesión"
+    "actionsRecordedInSession": "acciones registradas en esta sesión",
+    "activeAlertsCount": "{count} alerta{plural} activa{plural}",
+    "creditScore": "Puntuación crediticia",
+    "copyIdentifier": "Copiar identifier",
+    "remaining": "Pendiente",
+    "recentTransactions": "Transacciones recientes",
+    "search": "Buscar",
+    "logAddMoney": "^2[ADMIN] {0} añadió ${1} a la cuenta #{2}^7",
+    "logRemoveMoney": "^2[ADMIN] {0} removió ${1} de la cuenta #{2}^7",
+    "logCancelLoan": "^2[ADMIN] {0} canceló el préstamo #{1}^7",
+    "logResetBank": "^2[ADMIN] {0} reseteó el banco de {1}^7",
+    "logFreezeAccount": "^2[ADMIN] {0} {1} la cuenta #{2}^7",
+    "logDeleteSaving": "^2[ADMIN] {0} eliminó el ahorro #{1}^7",
+    "logDeleteContact": "^2[ADMIN] {0} eliminó el contacto #{1}^7",
+    "logDeleteTransaction": "^2[ADMIN] {0} eliminó la transacción #{1}^7",
+    "frozenStatus": "congeló",
+    "unfrozenStatus": "descongeló",
+    "noFramework": "===NO SE ENCONTRÓ UN FRAMEWORK COMPATIBLE===",
+    "systemLoaded": "^2[Bank System] Sistema admin cargado^7",
+    "deleteSavingTitle": "Eliminar ahorro",
+    "deleteSavingDesc": "¿Estás seguro de que deseas eliminar este ahorro? Los fondos serán reembolsados a la cuenta vinculada.",
+    "deleteContactTitle": "Eliminar contacto",
+    "deleteContactDesc": "¿Estás seguro de que deseas eliminar este contacto del usuario?",
+    "deleteTxTitle": "Eliminar transacción",
+    "deleteTxDesc": "¿Estás seguro de que deseas eliminar este registro de transacción? Esto NO afectará al balance de la cuenta.",
+    "savingDeleted": "Ahorro eliminado con éxito",
+    "contactDeleted": "Contacto eliminado con éxito",
+    "txDeleted": "Transacción eliminada",
+    "saving_deleted_id": "Ahorro #{0} eliminado",
+    "contact_deleted_id": "Contacto #{0} eliminado",
+    "tx_deleted_id": "Transacción #{0} eliminada",
+    "shared_user_removed": "Usuario compartido eliminado",
+    "removeSharedTitle": "Remover acceso",
+    "removeSharedDesc": "¿Estás seguro de que deseas quitarle el acceso a este usuario?"
   },
   "checks": {
     "title": "Cheques Bancarios",
@@ -800,7 +837,9 @@
     "forgeExpiresAt": "Fecha de expiración (opcional)",
     "confirmForge": "Falsificar",
     "codeToClone": "Código del cheque a clonar",
-    "selectCheck": "Selecciona un cheque..."
+    "selectCheck": "Selecciona un cheque...",
+    "fakeCheck": "FALSO",
+    "realCheck": "REAL"
   },
   "checksStandalone": {
     "common": {

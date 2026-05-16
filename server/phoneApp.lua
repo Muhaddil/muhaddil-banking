@@ -34,7 +34,7 @@ elseif Config.FrameWork == "qb" and GetResourceState('qb-core') == 'started' the
     QBCore = exports['qb-core']:GetCoreObject()
     FrameWork = 'qb'
 else
-    print('===NO SUPPORTED FRAMEWORK FOUND===')
+    print(Locale('admin.noFramework'))
 end
 
 local function GetBankData(source)

@@ -216,8 +216,7 @@ RegisterNetEvent('muhaddil_bank:cashCheckItem', function(data)
         exports.ox_inventory:RemoveItem(src, Config.Checks.ItemName, 1, nil, slot)
 
         Notify(src, 'error',
-            Locale('server.check_fake_detected') or
-            '🚨 ¡Cheque FALSO detectado! El cheque ha sido confiscado.')
+            Locale('server.check_fake_detected'))
 
         TriggerEvent('muhaddil_bank:fakeCheckDetected', {
             src        = src,
@@ -226,10 +225,10 @@ RegisterNetEvent('muhaddil_bank:cashCheckItem', function(data)
             amount     = meta.amount,
         })
 
-        print(string.format(
-            '^1[Bank] CHEQUE FALSO detectado! Jugador: %s | Código: %s | Monto: $%s^7',
-            GetPlayerName(src), checkCode, meta.amount
-        ))
+        -- print(string.format(
+        --     '^1[Bank] CHEQUE FALSO detectado! Jugador: %s | Código: %s | Monto: $%s^7',
+        --     GetPlayerName(src), checkCode, meta.amount
+        -- ))
         return
     end
 

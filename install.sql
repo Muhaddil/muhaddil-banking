@@ -1,4 +1,3 @@
--- Execute this file to manually create all required tables
 -- Table: bank_accounts
 CREATE TABLE
     IF NOT EXISTS `bank_accounts` (

@@ -13,10 +13,17 @@ import {
     FileText, Bell, BellOff, Zap, TrendingDown, UserX,
     Copy, ExternalLink, MoreVertical, ChevronDown, Info,
     Send, RotateCcw, Layers, Target, Hash, Calendar,
-    UserCheck, ShieldAlert, ShieldCheck, Database
+    UserCheck, ShieldAlert, ShieldCheck, Database, Snowflake
 } from "lucide-react"
 import { fetchNui } from "../utils/fetchNui"
 import { useLocale } from "../hooks/useLocale"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "./ui/Select"
 
 interface AdminPanelProps {
     onClose: () => void
@@ -133,8 +140,8 @@ const fmt = {
 
     percent: (val: number) => `${(val * 100).toFixed(1)}%`,
 
-    copyToClipboard: (text: string) => {
-        navigator.clipboard?.writeText(text)
+    copyToClipboard: async (text: string) => {
+        await fetchNui("copyToClipboard", { text })
     }
 }
 
@@ -378,13 +385,18 @@ const FiltersBar: React.FC<{
                 />
             </div>
             {sortOptions && (
-                <select
-                    value={filter.sortBy}
-                    onChange={e => onChange({ sortBy: e.target.value })}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm outline-none"
-                >
-                    {sortOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+                <div className="w-fit">
+                    <Select value={filter.sortBy} onValueChange={v => onChange({ sortBy: v })}>
+                        <SelectTrigger className="h-auto px-3 py-2.5 text-sm min-w-[110px]">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {sortOptions.map(o => (
+                                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             )}
             {sortOptions && (
                 <button
@@ -395,14 +407,19 @@ const FiltersBar: React.FC<{
                 </button>
             )}
             {statusOptions && (
-                <select
-                    value={filter.status || ""}
-                    onChange={e => onChange({ status: e.target.value || undefined })}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm outline-none"
-                >
-                    <option value="">{t("admin.allStatuses")}</option>
-                    {statusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+                <div className="w-fit">
+                    <Select value={filter.status ?? "all"} onValueChange={v => onChange({ status: v === "all" ? undefined : v })}>
+                        <SelectTrigger className="h-auto px-3 py-2.5 text-sm min-w-[110px]">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">{t("admin.allStatuses")}</SelectItem>
+                            {statusOptions.map(o => (
+                                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             )}
         </div>
     )
@@ -413,35 +430,77 @@ const AccountRow: React.FC<{
     onAdd: () => void
     onRemove: () => void
     onFreeze: () => void
+    onRemoveShared?: (identifier: string) => void
     onViewHistory?: () => void
-}> = ({ acc, onAdd, onRemove, onFreeze, onViewHistory }) => {
+}> = ({ acc, onAdd, onRemove, onFreeze, onRemoveShared, onViewHistory }) => {
     const { t } = useLocale()
+    const isFrozen = !!acc.frozen
 
     return (
-        <div className="flex items-center justify-between py-3 px-1 border-b border-white/5 last:border-0 group">
-            <div className="flex items-center gap-3">
-                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${acc.frozen ? "bg-red-400" : "bg-emerald-400"}`} />
-                <div>
-                    <div className="flex items-center gap-2">
-                        <p className="text-sm text-white font-medium">{acc.account_name}</p>
-                        {acc.frozen && <Pill label={t("cards.blocked")} color="red" />}
+        <div className="group bg-white/5 hover:bg-white/[0.08] rounded-xl p-3 transition-all duration-300 border border-white/5 hover:border-white/10">
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isFrozen ? 'bg-red-500/20' : 'bg-[rgb(var(--primary))]/20'}`}>
+                        {isFrozen ? <Snowflake size={20} className="text-red-400" /> : <CreditCard size={20} className="text-[rgb(var(--primary))]" />}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-xs text-[rgb(var(--text-secondary))]">#{acc.id}</p>
-                        {acc.account_type && <Pill label={acc.account_type} color="blue" />}
+                    <div className="min-w-0">
+                        <h4 className="text-sm font-semibold text-white truncate">{acc.account_name}</h4>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] font-medium text-[rgb(var(--text-secondary))] px-1.5 py-0.5 bg-white/5 rounded uppercase tracking-wider">
+                                #{acc.id}
+                            </span>
+                            {acc.iban && (
+                                <span className="text-[10px] font-medium text-[rgb(var(--primary))] px-1.5 py-0.5 bg-[rgb(var(--primary))]/10 rounded uppercase tracking-wider">
+                                    {acc.iban}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <div className="text-right">
+                        <p className={`text-base font-bold ${parseFloat(acc.balance) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                            {fmt.money(acc.balance)}
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                        <ActionBtn icon={<Plus size={14} />} onClick={onAdd} label={t("admin.addMoney")} color="green" />
+                        <ActionBtn icon={<Minus size={14} />} onClick={onRemove} label={t("admin.removeMoney")} color="red" />
+                        <ActionBtn
+                            icon={isFrozen ? <Unlock size={14} /> : <Snowflake size={14} />}
+                            onClick={onFreeze}
+                            label={isFrozen ? t("admin.unfreezeAccount") : t("admin.freezeAccount")}
+                            color={isFrozen ? "blue" : "red"}
+                        />
+                        {onViewHistory && <ActionBtn icon={<History size={14} />} onClick={onViewHistory} label={t("transactions.history")} color="blue" />}
                     </div>
                 </div>
             </div>
-            <div className="flex items-center gap-1">
-                <p className="text-sm font-bold text-white mr-2">{fmt.money(acc.balance)}</p>
-                <ActionBtn onClick={onAdd} icon={<Plus size={13} />} label={t("admin.addMoney")} color="green" />
-                <ActionBtn onClick={onRemove} icon={<Minus size={13} />} label={t("admin.removeMoney")} color="red" />
-                <ActionBtn onClick={onFreeze} icon={acc.frozen ? <Unlock size={13} /> : <Lock size={13} />} label={acc.frozen ? t("admin.unfreezeAccount") : t("admin.freezeAccount")} color="yellow" />
-                {onViewHistory && (
-                    <ActionBtn onClick={onViewHistory} icon={<History size={13} />} label={t("transactions.history")} color="blue" />
-                )}
-                <ActionBtn onClick={() => fmt.copyToClipboard(String(acc.id))} icon={<Copy size={13} />} label={t("common.copyId")} color="purple" />
-            </div>
+
+            {acc.shared_users?.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                    <p className="text-[10px] font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wider mb-2">
+                        {t("admin.shared_users")}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {acc.shared_users.map((user: any) => (
+                            <div key={user.user_identifier} className="flex items-center gap-2 px-2 py-1 bg-white/5 rounded-md group/user">
+                                <span className="text-[10px] text-white/80">{user.user_identifier}</span>
+                                {onRemoveShared && (
+                                    <button
+                                        onClick={() => onRemoveShared(user.user_identifier)}
+                                        className="p-0.5 hover:bg-red-500/20 text-red-400/50 hover:text-red-400 rounded transition-colors"
+                                    >
+                                        <X size={10} />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
@@ -464,7 +523,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
     const { dialog: confirmDialog, confirm, resolve: resolveConfirm } = useConfirm()
 
     const [accountsFilter, setAccountsFilter] = useState<FilterState>({ search: "", sortBy: "balance", sortDir: "desc" })
-    const [loansFilter, setLoansFilter] = useState<FilterState>({ search: "", sortBy: "amount", sortDir: "desc", status: "active" })
+    const [loansFilter, setLoansFilter] = useState<FilterState>({ search: "", sortBy: "amount", sortDir: "desc", status: undefined })
     const [txFilter, setTxFilter] = useState<FilterState>({ search: "", sortBy: "date", sortDir: "desc" })
 
     const [dismissedAlerts, setDismissedAlerts] = useState<Set<number>>(new Set())
@@ -536,22 +595,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
 
     const handleMoneyConfirm = async (amount: number, note: string) => {
         if (!moneyModal) return
+
         const isAdd = moneyModal.mode === "add"
+
         try {
             await fetchNui(isAdd ? "adminAddMoney" : "adminRemoveMoney", {
                 accountId: moneyModal.accountId,
                 amount,
                 note,
             })
-            pushToast(`${isAdd ? t("admin.fundsAdded") : t("admin.fundsRemoved")}: ${fmt.money(amount)}`, "success")
+
+            pushToast(
+                `${isAdd ? t("admin.fundsAdded") : t("admin.fundsRemoved")}: ${fmt.money(amount)}`,
+                "success"
+            )
+
             recordAudit(
                 isAdd ? "add_money" : "remove_money",
                 `${fmt.money(amount)}${note ? ` — ${note}` : ""}`,
                 String(moneyModal.accountId)
             )
+
             setMoneyModal(null)
             loadAdminData(true)
-            if (searchResult) handleSearch()
+
+            if (searchResult) {
+                await new Promise(resolve => setTimeout(resolve, 1000))
+                handleSearch()
+            }
+
         } catch {
             pushToast(t("admin.errorOperation"), "error")
         }
@@ -568,6 +640,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                 pushToast(t("admin.loanCancelled"), "success")
                 recordAudit("cancel_loan", `Loan #${loanId}`, identifier)
                 loadAdminData(true)
+                if (searchResult) handleSearch()
             }
         })
     }
@@ -601,6 +674,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                 pushToast(t("admin.transferDeleted"), "success")
                 recordAudit("delete_scheduled", `Transfer #${transferId}`)
                 loadAdminData(true)
+                if (searchResult) handleSearch()
             }
         })
     }
@@ -616,6 +690,69 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                 pushToast(t("admin.requestRejected"), "success")
                 recordAudit("cancel_request", `Request #${requestId}`)
                 loadAdminData(true)
+                if (searchResult) handleSearch()
+            }
+        })
+    }
+
+    const handleDeleteSaving = (savingId: number) => {
+        confirm({
+            title: t("admin.deleteSavingTitle"),
+            description: t("admin.deleteSavingDesc"),
+            confirmLabel: t("common.delete"),
+            variant: "danger",
+            onConfirm: async () => {
+                await fetchNui("adminDeleteSaving", { savingId })
+                pushToast(t("admin.savingDeleted"), "success")
+                recordAudit("delete_saving", `Saving #${savingId}`)
+                if (searchResult) handleSearch()
+                loadAdminData(true)
+            }
+        })
+    }
+
+    const handleDeleteContact = (contactId: number) => {
+        confirm({
+            title: t("admin.deleteContactTitle"),
+            description: t("admin.deleteContactDesc"),
+            confirmLabel: t("common.delete"),
+            variant: "danger",
+            onConfirm: async () => {
+                await fetchNui("adminDeleteContact", { contactId })
+                pushToast(t("admin.contactDeleted"), "success")
+                recordAudit("delete_contact", `Contact #${contactId}`)
+                if (searchResult) handleSearch()
+            }
+        })
+    }
+
+    const handleDeleteTransaction = (txId: number) => {
+        confirm({
+            title: t("admin.deleteTxTitle"),
+            description: t("admin.deleteTxDesc"),
+            confirmLabel: t("common.delete"),
+            variant: "danger",
+            onConfirm: async () => {
+                await fetchNui("adminDeleteTransaction", { txId })
+                pushToast(t("admin.txDeleted"), "success")
+                recordAudit("delete_tx", `Transaction #${txId}`)
+                if (searchResult) handleSearch()
+                if (activeTab === "transactions") loadAdminData(true)
+            }
+        })
+    }
+
+    const handleRemoveSharedUser = (accountId: number, identifier: string) => {
+        confirm({
+            title: t("admin.removeSharedTitle"),
+            description: t("admin.removeSharedDesc"),
+            confirmLabel: t("common.delete"),
+            variant: "danger",
+            onConfirm: async () => {
+                await fetchNui("adminRemoveSharedUser", { accountId, identifier })
+                pushToast(t("admin.shared_user_removed"), "success")
+                recordAudit("remove_shared_user", `Account #${accountId}, User: ${identifier}`)
+                if (searchResult) handleSearch()
             }
         })
     }
@@ -637,8 +774,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
         })
 
     const filteredLoans = (adminData?.allLoans || [])
-        .filter((l: any) => !loansFilter.status || l.status === loansFilter.status)
-        .filter((l: any) => !loansFilter.search || l.user_identifier?.includes(loansFilter.search))
+        .filter((l: any) => loansFilter.status === undefined || loansFilter.status === "all" || l.status === loansFilter.status)
+    // .filter((l: any) => !loansFilter.search || l.user_identifier?.includes(loansFilter.search))
 
     const filteredTx = (adminData?.recentTransactions || [])
         .filter((tx: any) => !txFilter.search || tx.type?.toLowerCase().includes(txFilter.search.toLowerCase()) || tx.account_name?.toLowerCase().includes(txFilter.search.toLowerCase()) || tx.description?.toLowerCase().includes(txFilter.search.toLowerCase()))
@@ -760,7 +897,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                                         <div className="flex items-center gap-2">
                                             <ShieldAlert size={16} className="text-yellow-400" />
                                             <span className="text-sm font-semibold text-white">
-                                                {filteredAlerts.length} alerta{filteredAlerts.length !== 1 ? "s" : ""} activa{filteredAlerts.length !== 1 ? "s" : ""}
+                                                {t("admin.activeAlertsCount", { count: filteredAlerts.length, plural: filteredAlerts.length !== 1 ? "s" : "" })}
                                             </span>
                                         </div>
                                         <button onClick={() => setActiveTab("alerts")} className="text-xs text-yellow-400 hover:underline flex items-center gap-1">
@@ -895,10 +1032,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                                                         </div>
                                                         <div>
                                                             <p className="text-sm font-semibold text-white">{fmt.shortId(searchResult.identifier, 30)}</p>
-                                                            <p className="text-xs text-[rgb(var(--text-secondary))]">Credit score: <span className="text-white font-medium">{searchResult.creditScore ?? "—"}</span></p>
+                                                            <p className="text-xs text-[rgb(var(--text-secondary))]">{t("admin.creditScore")}: <span className="text-white font-medium">{searchResult.creditScore ?? "—"}</span></p>
                                                         </div>
                                                     </div>
-                                                    <button onClick={() => fmt.copyToClipboard(searchResult.identifier)} className="p-1.5 hover:bg-white/10 rounded-lg" title="Copiar identifier">
+                                                    <button onClick={() => fmt.copyToClipboard(searchResult.identifier)} className="p-1.5 hover:bg-white/10 rounded-lg" title={t("admin.copyIdentifier")}>
                                                         <Copy size={13} className="text-[rgb(var(--text-secondary))]" />
                                                     </button>
                                                 </div>
@@ -921,7 +1058,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                                             {searchResult.accounts?.length > 0 && (
                                                 <Card className="p-4">
                                                     <h3 className="text-xs font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wider mb-3">
-                                                        Cuentas ({searchResult.accounts.length})
+                                                        {t("admin.accounts")} ({searchResult.accounts.length})
                                                     </h3>
                                                     {searchResult.accounts.map((acc: any) => (
                                                         <AccountRow
@@ -930,6 +1067,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                                                             onAdd={() => setMoneyModal({ accountId: acc.id, accountName: acc.account_name, mode: "add" })}
                                                             onRemove={() => setMoneyModal({ accountId: acc.id, accountName: acc.account_name, mode: "remove" })}
                                                             onFreeze={() => handleFreezeAccount(acc.id, !!acc.frozen)}
+                                                            onRemoveShared={(identifier) => handleRemoveSharedUser(acc.id, identifier)}
                                                         />
                                                     ))}
                                                 </Card>
@@ -938,7 +1076,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                                             {searchResult.loans?.length > 0 && (
                                                 <Card className="p-4">
                                                     <h3 className="text-xs font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wider mb-3">
-                                                        Préstamos ({searchResult.loans.length})
+                                                        {t("admin.loans")} ({searchResult.loans.length})
                                                     </h3>
                                                     {searchResult.loans.map((loan: any) => (
                                                         <div key={loan.id} className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0">
@@ -949,7 +1087,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                                                                     <Pill label={loan.status} color={loan.status === "active" ? "green" : "blue"} />
                                                                 </div>
                                                                 <p className="text-xs text-[rgb(var(--text-secondary))] mt-0.5">
-                                                                    Pendiente: <span className="text-white">{fmt.money(loan.remaining)}</span>
+                                                                    {t("admin.remaining")}: <span className="text-white">{fmt.money(loan.remaining)}</span>
                                                                 </p>
                                                             </div>
                                                             {loan.status === "active" && (
@@ -963,7 +1101,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                                             {searchResult.savings?.length > 0 && (
                                                 <Card className="p-4">
                                                     <h3 className="text-xs font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wider mb-3">
-                                                        Ahorros ({searchResult.savings.length})
+                                                        {t("admin.savings")} ({searchResult.savings.length})
                                                     </h3>
                                                     {searchResult.savings.map((saving: any) => {
                                                         const pct = saving.goal_amount > 0 ? (saving.current_amount / saving.goal_amount) * 100 : 0
@@ -978,7 +1116,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                                                                 <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                                                                     <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(pct, 100)}%` }} />
                                                                 </div>
-                                                                <p className="text-[10px] text-[rgb(var(--text-secondary))] mt-1">{pct.toFixed(1)}% {t("admin.completed")}</p>
+                                                                <div className="flex items-center justify-between mt-1">
+                                                                    <p className="text-[10px] text-[rgb(var(--text-secondary))]">{pct.toFixed(1)}% {t("admin.completed")}</p>
+                                                                    <ActionBtn
+                                                                        onClick={() => handleDeleteSaving(saving.id)}
+                                                                        icon={<Trash2 size={12} />}
+                                                                        label={t("common.delete")}
+                                                                        color="red"
+                                                                    />
+                                                                </div>
                                                             </div>
                                                         )
                                                     })}
@@ -988,18 +1134,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                                             {searchResult.contacts?.length > 0 && (
                                                 <Card className="p-4">
                                                     <h3 className="text-xs font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wider mb-3">
-                                                        Contactos ({searchResult.contacts.length})
+                                                        {t("admin.contacts")} ({searchResult.contacts.length})
                                                     </h3>
                                                     <div className="grid grid-cols-2 gap-2">
                                                         {searchResult.contacts.map((c: any) => (
-                                                            <div key={c.id} className="flex items-center gap-2 py-1.5">
-                                                                <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                                                                    <Users size={11} className="text-[rgb(var(--text-secondary))]" />
+                                                            <div key={c.id} className="flex items-center justify-between py-1.5 px-2 bg-white/5 rounded-lg group">
+                                                                <div className="flex items-center gap-2 overflow-hidden">
+                                                                    <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                                                                        <Users size={11} className="text-[rgb(var(--text-secondary))]" />
+                                                                    </div>
+                                                                    <div className="truncate">
+                                                                        <p className="text-xs text-white truncate">{c.contact_name}</p>
+                                                                        <p className="text-[10px] text-[rgb(var(--text-secondary))]">#{c.contact_account_id}</p>
+                                                                    </div>
                                                                 </div>
-                                                                <div>
-                                                                    <p className="text-xs text-white">{c.contact_name}</p>
-                                                                    <p className="text-[10px] text-[rgb(var(--text-secondary))]">#{c.contact_account_id}</p>
-                                                                </div>
+                                                                <ActionBtn
+                                                                    onClick={() => handleDeleteContact(c.id)}
+                                                                    icon={<Trash2 size={12} />}
+                                                                    label={t("common.delete")}
+                                                                    color="red"
+                                                                />
                                                             </div>
                                                         ))}
                                                     </div>
@@ -1009,18 +1163,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                                             {searchResult.transactions?.length > 0 && (
                                                 <Card className="p-4">
                                                     <h3 className="text-xs font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wider mb-3">
-                                                        Transacciones recientes ({searchResult.transactions.length})
+                                                        {t("admin.recentTransactions")} ({searchResult.transactions.length})
                                                     </h3>
                                                     <div className="max-h-52 overflow-y-auto space-y-0 divide-y divide-white/5">
                                                         {searchResult.transactions.map((tx: any) => (
-                                                            <div key={tx.id} className="flex items-center justify-between py-2">
-                                                                <div>
-                                                                    <p className="text-xs text-white">{tx.type} · {tx.account_name}</p>
-                                                                    <p className="text-[10px] text-[rgb(var(--text-secondary))]">{fmt.date(tx.created_at)}</p>
+                                                            <div key={tx.id} className="flex items-center justify-between py-2 group">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div>
+                                                                        <p className="text-xs text-white">{tx.type} · {tx.account_name}</p>
+                                                                        <p className="text-[10px] text-[rgb(var(--text-secondary))]">{fmt.date(tx.created_at)}</p>
+                                                                    </div>
                                                                 </div>
-                                                                <span className={`text-sm font-bold ${parseFloat(tx.amount) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                                                                    {fmt.money(tx.amount)}
-                                                                </span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`text-sm font-bold ${parseFloat(tx.amount) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                                                        {fmt.money(tx.amount)}
+                                                                    </span>
+                                                                    <ActionBtn
+                                                                        onClick={() => handleDeleteTransaction(tx.id)}
+                                                                        icon={<Trash2 size={11} />}
+                                                                        label={t("common.delete")}
+                                                                        color="red"
+                                                                    />
+                                                                </div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -1044,20 +1208,39 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                                     { value: "name", label: t("admin.byName") },
                                 ]}
                             />
+
                             {filteredAccounts.length === 0 ? (
-                                <EmptyState icon={<CreditCard size={28} />} title={t("admin.noAccounts")} />
+                                <EmptyState
+                                    icon={<CreditCard size={28} />}
+                                    title={t("admin.noAccounts")}
+                                />
                             ) : (
-                                <Card className="p-4 divide-y divide-white/5">
+                                <div className="flex flex-col gap-3">
                                     {filteredAccounts.map((acc: any) => (
-                                        <AccountRow
-                                            key={acc.id}
-                                            acc={acc}
-                                            onAdd={() => setMoneyModal({ accountId: acc.id, accountName: acc.account_name, mode: "add" })}
-                                            onRemove={() => setMoneyModal({ accountId: acc.id, accountName: acc.account_name, mode: "remove" })}
-                                            onFreeze={() => handleFreezeAccount(acc.id, !!acc.frozen)}
-                                        />
+                                        <Card key={acc.id} className="p-4">
+                                            <AccountRow
+                                                acc={acc}
+                                                onAdd={() =>
+                                                    setMoneyModal({
+                                                        accountId: acc.id,
+                                                        accountName: acc.account_name,
+                                                        mode: "add",
+                                                    })
+                                                }
+                                                onRemove={() =>
+                                                    setMoneyModal({
+                                                        accountId: acc.id,
+                                                        accountName: acc.account_name,
+                                                        mode: "remove",
+                                                    })
+                                                }
+                                                onFreeze={() =>
+                                                    handleFreezeAccount(acc.id, !!acc.frozen)
+                                                }
+                                            />
+                                        </Card>
                                     ))}
-                                </Card>
+                                </div>
                             )}
                         </div>
                     )}
@@ -1131,9 +1314,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                                             <p className="text-[11px] text-[rgb(var(--text-secondary))] truncate">{tx.description || "—"}</p>
                                             <p className="text-[10px] text-[rgb(var(--text-secondary))]">{fmt.date(tx.created_at)}</p>
                                         </div>
-                                        <span className={`text-sm font-bold flex-shrink-0 ${parseFloat(tx.amount) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                                            {fmt.money(tx.amount)}
-                                        </span>
+                                        <div className="flex items-center gap-3">
+                                            <span className={`text-sm font-bold flex-shrink-0 ${parseFloat(tx.amount) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                                {fmt.money(tx.amount)}
+                                            </span>
+                                            <ActionBtn
+                                                onClick={() => handleDeleteTransaction(tx.id)}
+                                                icon={<Trash2 size={13} />}
+                                                label={t("common.delete")}
+                                                color="red"
+                                            />
+                                        </div>
                                     </Card>
                                 ))}
                             </div>

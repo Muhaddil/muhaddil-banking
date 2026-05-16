@@ -442,7 +442,7 @@ export const CheckManager: React.FC<CheckManagerProps> = ({
                                             ) : (
                                                 inventoryChecks.map((chk) => (
                                                     <SelectItem key={chk.slot} value={chk.slot.toString()} className="font-mono">
-                                                        {chk.check_code} — ${parseFloat(chk.amount).toLocaleString()} {chk.is_fake ? <span className="text-red-400 font-bold text-xs ml-1">(FALSO)</span> : <span className="text-emerald-400 font-bold text-xs ml-1">(REAL)</span>}
+                                                        {chk.check_code} — ${parseFloat(chk.amount).toLocaleString()} {chk.is_fake ? <span className="text-red-400 font-bold text-xs ml-1">({t("checks.fakeCheck")})</span> : <span className="text-emerald-400 font-bold text-xs ml-1">({t("checks.realCheck")})</span>}
                                                     </SelectItem>
                                                 ))
                                             )}

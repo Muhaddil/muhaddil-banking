@@ -19,7 +19,7 @@ if Config.FrameWork == "auto" then
         QBCore = exports['qb-core']:GetCoreObject()
         FrameWork = 'qb'
     else
-        print('===NO SUPPORTED FRAMEWORK FOUND===')
+        print(Locale('admin.noFramework'))
     end
 elseif Config.FrameWork == "esx" and GetResourceState('es_extended') == 'started' then
     if ESXVer == 'new' then
@@ -36,7 +36,27 @@ elseif Config.FrameWork == "qb" and GetResourceState('qb-core') == 'started' the
     QBCore = exports['qb-core']:GetCoreObject()
     FrameWork = 'qb'
 else
-    print('===NO SUPPORTED FRAMEWORK FOUND===')
+    print(Locale('admin.noFramework'))
+end
+
+local function syncPlayerAccount(accountId)
+    local owner = MySQL.scalar.await('SELECT owner FROM bank_accounts WHERE id = ?', { accountId })
+    if owner then
+        local targetPlayer = GetPlayerFromIdentifier(owner)
+        local playerId = nil
+        if targetPlayer then
+            if FrameWork == 'esx' then
+                playerId = targetPlayer.source
+            elseif FrameWork == 'qb' then
+                playerId = targetPlayer.PlayerData.source
+            end
+        end
+
+        if playerId then
+            exports['muhaddil-banking']:SyncFrameworkBank(playerId)
+            TriggerClientEvent('muhaddil_bank:refreshData', playerId)
+        end
+    end
 end
 
 RegisterCommand('bankadmin', function(source, args, rawCommand)
@@ -50,7 +70,8 @@ RegisterCommand('bankadmin', function(source, args, rawCommand)
     print("^2========== " .. Locale('admin.top50_header') .. " ==========^7")
     for i, acc in ipairs(accounts) do
         print(string.format("^3#%d^7 | %s: ^2%s^7 | %s: ^5%s^7 | %s: ^1$%.2f^7",
-            i, Locale('admin.owner'), acc.owner, Locale('admin.name'), acc.account_name, Locale('admin.balance'), acc.balance))
+            i, Locale('admin.owner'), acc.owner, Locale('admin.name'), acc.account_name, Locale('admin.balance'),
+            acc.balance))
     end
     print("^2=====================================^7")
 
@@ -83,7 +104,8 @@ RegisterCommand('bankaddmoney', function(source, args, rawCommand)
 
         TriggerClientEvent('muhaddil_bank:notify', source, 'success',
             Locale('admin.added_money', amount, accountId))
-        print(string.format("^2[ADMIN] %s añadió $%.2f a la cuenta #%d^7", GetPlayerName(source), amount, accountId))
+        syncPlayerAccount(accountId)
+        print(Locale('admin.logAddMoney', GetPlayerName(source), amount, accountId))
     else
         TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.account_not_found'))
     end
@@ -114,7 +136,8 @@ RegisterCommand('bankremovemoney', function(source, args, rawCommand)
 
         TriggerClientEvent('muhaddil_bank:notify', source, 'success',
             Locale('admin.removed_money', amount, accountId))
-        print(string.format("^2[ADMIN] %s removió $%.2f de la cuenta #%d^7", GetPlayerName(source), amount, accountId))
+        syncPlayerAccount(accountId)
+        print(Locale('admin.logRemoveMoney', GetPlayerName(source), amount, accountId))
     else
         TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.account_not_found'))
     end
@@ -131,7 +154,8 @@ RegisterCommand('bankloans', function(source, args, rawCommand)
     print("^2========== " .. Locale('admin.active_loans_header') .. " ==========^7")
     for i, loan in ipairs(loans) do
         print(string.format("^3#%d^7 | %s: ^2%s^7 | %s: ^1$%.2f^7 | %s: ^1$%.2f^7",
-            loan.id, Locale('admin.user'), loan.user_identifier, Locale('admin.amount'), loan.amount, Locale('admin.remaining'), loan.remaining))
+            loan.id, Locale('admin.user'), loan.user_identifier, Locale('admin.amount'), loan.amount,
+            Locale('admin.remaining'), loan.remaining))
     end
     print("^2========================================^7")
 
@@ -157,7 +181,7 @@ RegisterCommand('bankcancelloan', function(source, args, rawCommand)
 
     if affectedRows > 0 then
         TriggerClientEvent('muhaddil_bank:notify', source, 'success', Locale('admin.loan_cancelled_id', loanId))
-        print(string.format("^2[ADMIN] %s canceló el préstamo #%d^7", GetPlayerName(source), loanId))
+        print(Locale('admin.logCancelLoan', GetPlayerName(source), loanId))
     else
         TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.loan_not_found'))
     end
@@ -233,7 +257,7 @@ RegisterCommand('bankreset', function(source, args, rawCommand)
 
     TriggerClientEvent('muhaddil_bank:notify', source, 'success', Locale('admin.bank_reset_success'))
     TriggerClientEvent('muhaddil_bank:notify', targetId, 'error', Locale('admin.bank_reset_target'))
-    print(string.format("^2[ADMIN] %s reseteó el banco de %s^7", GetPlayerName(source), GetPlayerName(targetId)))
+    print(Locale('admin.logResetBank', GetPlayerName(source), GetPlayerName(targetId)))
 end, false)
 
 local AlertThresholds = {
@@ -262,7 +286,8 @@ lib.callback.register('muhaddil_bank:getAdminAlerts', function(source)
     for _, tx in ipairs(largeTx or {}) do
         table.insert(alerts, {
             type = 'large_transaction',
-            severity = math.abs(tonumber(tx.amount) or 0) >= AlertThresholds.LargeTransaction * 2 and 'critical' or 'warning',
+            severity = math.abs(tonumber(tx.amount) or 0) >= AlertThresholds.LargeTransaction * 2 and 'critical' or
+                'warning',
             accountId = tx.account_id,
             accountName = tx.account_name or ('Account #' .. tx.account_id),
             owner = tx.owner,
@@ -289,7 +314,8 @@ lib.callback.register('muhaddil_bank:getAdminAlerts', function(source)
     for _, freq in ipairs(highFreq or {}) do
         table.insert(alerts, {
             type = 'high_frequency',
-            severity = (tonumber(freq.tx_count) or 0) >= AlertThresholds.HighFrequencyCount * 2 and 'critical' or 'warning',
+            severity = (tonumber(freq.tx_count) or 0) >= AlertThresholds.HighFrequencyCount * 2 and 'critical' or
+                'warning',
             accountId = freq.account_id,
             accountName = freq.account_name or ('Account #' .. freq.account_id),
             owner = freq.owner,
@@ -316,7 +342,8 @@ lib.callback.register('muhaddil_bank:getAdminAlerts', function(source)
     for _, st in ipairs(selfTransfers or {}) do
         local targetAccId = st.tx_desc and st.tx_desc:match('#(%d+)')
         if targetAccId then
-            local targetOwner = MySQL.scalar.await('SELECT owner FROM bank_accounts WHERE id = ?', { tonumber(targetAccId) })
+            local targetOwner = MySQL.scalar.await('SELECT owner FROM bank_accounts WHERE id = ?',
+                { tonumber(targetAccId) })
             if targetOwner and targetOwner == st.from_owner then
                 table.insert(alerts, {
                     type = 'self_transfer',
@@ -378,7 +405,7 @@ lib.callback.register('muhaddil_bank:getAdminData', function(source)
     local totalBalance = MySQL.scalar.await('SELECT COALESCE(SUM(balance), 0) FROM bank_accounts') or 0
     local activeLoans = MySQL.scalar.await("SELECT COUNT(*) FROM bank_loans WHERE status = 'active'") or 0
     local totalLoanAmount = MySQL.scalar.await(
-        "SELECT COALESCE(SUM(remaining), 0) FROM bank_loans WHERE status = 'active'") or 0
+        "SELECT COALESCE(SUM(amount), 0) FROM bank_loans") or 0
     local totalTransactions = MySQL.scalar.await('SELECT COUNT(*) FROM bank_transactions') or 0
     local totalTransactionVolume = MySQL.scalar.await('SELECT COALESCE(SUM(ABS(amount)), 0) FROM bank_transactions') or 0
     local totalSavings = MySQL.scalar.await('SELECT COALESCE(SUM(current_amount), 0) FROM bank_savings_accounts') or 0
@@ -399,7 +426,7 @@ lib.callback.register('muhaddil_bank:getAdminData', function(source)
     ]])
 
     local allLoans = MySQL.query.await([[
-        SELECT * FROM bank_loans WHERE status = 'active' ORDER BY remaining DESC
+        SELECT * FROM bank_loans ORDER BY remaining DESC
     ]])
 
     local bankOwnerships = MySQL.query.await('SELECT * FROM bank_ownership')
@@ -508,7 +535,6 @@ lib.callback.register('muhaddil_bank:adminSearchUser', function(source, searchQu
             if result then
                 targetIdentifier = result.identifier
             end
-
         elseif FrameWork == 'qb' then
             local result = MySQL.single.await([[
                 SELECT citizenid FROM players
@@ -562,6 +588,11 @@ lib.callback.register('muhaddil_bank:adminSearchUser', function(source, searchQu
     local transactions = {}
 
     for _, acc in ipairs(accounts or {}) do
+        acc.shared_users = MySQL.query.await(
+            'SELECT user_identifier FROM bank_shared_access WHERE account_id = ?',
+            { acc.id }
+        ) or {}
+
         local accTx = MySQL.query.await([[
             SELECT * FROM bank_transactions
             WHERE account_id = ?
@@ -607,7 +638,8 @@ RegisterNetEvent('muhaddil_bank:adminAddMoney', function(accountId, amount)
     )
 
     Notify(src, 'success', Locale('admin.added_money', amount, accountId))
-    print(string.format("^2[ADMIN] %s añadió $%.2f a cuenta #%d^7", GetPlayerName(src), amount, accountId))
+    syncPlayerAccount(accountId)
+    print(Locale('admin.logAddMoney', GetPlayerName(src), amount, accountId))
 end)
 
 RegisterNetEvent('muhaddil_bank:adminRemoveMoney', function(accountId, amount)
@@ -630,7 +662,8 @@ RegisterNetEvent('muhaddil_bank:adminRemoveMoney', function(accountId, amount)
     )
 
     Notify(src, 'success', Locale('admin.removed_money', amount, accountId))
-    print(string.format("^2[ADMIN] %s removió $%.2f de cuenta #%d^7", GetPlayerName(src), amount, accountId))
+    syncPlayerAccount(accountId)
+    print(Locale('admin.logRemoveMoney', GetPlayerName(src), amount, accountId))
 end)
 
 RegisterNetEvent('muhaddil_bank:adminCancelLoan', function(loanId)
@@ -643,7 +676,17 @@ RegisterNetEvent('muhaddil_bank:adminCancelLoan', function(loanId)
     MySQL.query.await('UPDATE bank_loans SET status = "cancelled", remaining = 0 WHERE id = ?', { loanId })
 
     Notify(src, 'success', Locale('admin.loan_cancelled_id', loanId))
-    print(string.format("^2[ADMIN] %s canceló préstamo #%d^7", GetPlayerName(src), loanId))
+    local accountId = MySQL.scalar.await('SELECT account_id FROM bank_loan_payments WHERE loan_id = ? LIMIT 1',
+        { loanId })
+    if not accountId then
+        -- Try to find an account for the user
+        local owner = MySQL.scalar.await('SELECT user_identifier FROM bank_loans WHERE id = ?', { loanId })
+        if owner then
+            accountId = MySQL.scalar.await('SELECT id FROM bank_accounts WHERE owner = ? LIMIT 1', { owner })
+        end
+    end
+    if accountId then syncPlayerAccount(accountId) end
+    print(Locale('admin.logCancelLoan', GetPlayerName(src), loanId))
 end)
 
 RegisterNetEvent('muhaddil_bank:adminFreezeAccount', function(accountId)
@@ -657,8 +700,12 @@ RegisterNetEvent('muhaddil_bank:adminFreezeAccount', function(accountId)
     if account then
         local newFrozenStatus = not (account.frozen or false)
         MySQL.query.await('UPDATE bank_accounts SET frozen = ? WHERE id = ?', { newFrozenStatus and 1 or 0, accountId })
-        Notify(src, 'success', newFrozenStatus and Locale('admin.account_frozen_id', accountId) or Locale('admin.account_unfrozen_id', accountId))
-        print(string.format("^2[ADMIN] %s %s cuenta #%d^7", GetPlayerName(src), newFrozenStatus and 'congeló' or 'descongeló', accountId))
+        Notify(src, 'success',
+            newFrozenStatus and Locale('admin.account_frozen_id', accountId) or
+            Locale('admin.account_unfrozen_id', accountId))
+        syncPlayerAccount(accountId)
+        print(Locale('admin.logFreezeAccount', GetPlayerName(src),
+            newFrozenStatus and Locale('admin.frozenStatus') or Locale('admin.unfrozenStatus'), accountId))
     end
 end)
 
@@ -685,6 +732,98 @@ RegisterNetEvent('muhaddil_bank:adminCancelRequest', function(requestId)
         { requestId }
     )
     Notify(src, 'success', Locale('admin.request_cancelled_id', requestId))
+end)
+
+RegisterNetEvent('muhaddil_bank:adminDeleteSaving', function(data)
+    local src = source
+    if not hasPermission(src) then return end
+
+    local savingId = tonumber(data.savingId)
+    if not savingId then return end
+
+    local savings = MySQL.single.await('SELECT * FROM bank_savings_accounts WHERE id = ?', { savingId })
+    if not savings then
+        return Notify(src, 'error', Locale('server.savings_not_found'))
+    end
+
+    local currentAmount = tonumber(savings.current_amount) or 0
+    if currentAmount > 0 then
+        MySQL.query.await('UPDATE bank_accounts SET balance = balance + ? WHERE id = ?',
+            { currentAmount, savings.account_id })
+        MySQL.insert.await([[
+            INSERT INTO bank_transactions (account_id, type, amount, description)
+            VALUES (?, 'savings_close', ?, ?)
+        ]], { savings.account_id, currentAmount, Locale('server.savings_close', savings.goal_name, currentAmount) })
+    end
+
+    MySQL.query.await('DELETE FROM bank_savings_accounts WHERE id = ?', { savingId })
+
+    Notify(src, 'success', Locale('admin.saving_deleted_id', savingId))
+    syncPlayerAccount(savings.account_id)
+    print(Locale('admin.logDeleteSaving', GetPlayerName(src), savingId))
+end)
+
+RegisterNetEvent('muhaddil_bank:adminDeleteContact', function(data)
+    local src = source
+    if not hasPermission(src) then return end
+
+    local contactId = tonumber(data.contactId)
+    if not contactId then return end
+
+    local affectedRows = MySQL.query.await('DELETE FROM bank_contacts WHERE id = ?', { contactId })
+
+    if affectedRows > 0 then
+        Notify(src, 'success', Locale('admin.contact_deleted_id', contactId))
+        print(Locale('admin.logDeleteContact', GetPlayerName(src), contactId))
+    else
+        Notify(src, 'error', Locale('server.contact_not_found'))
+    end
+end)
+
+RegisterNetEvent('muhaddil_bank:adminDeleteTransaction', function(data)
+    local src = source
+    if not hasPermission(src) then return end
+
+    local txId = tonumber(data.txId)
+    if not txId then return end
+
+    local tx = MySQL.single.await('SELECT account_id FROM bank_transactions WHERE id = ?', { txId })
+    if not tx then
+        return Notify(src, 'error', Locale('server.invalid_data'))
+    end
+
+    local affectedRows = MySQL.query.await('DELETE FROM bank_transactions WHERE id = ?', { txId })
+
+    if affectedRows > 0 then
+        Notify(src, 'success', Locale('admin.tx_deleted_id', txId))
+        syncPlayerAccount(tx.account_id)
+        print(Locale('admin.logDeleteTransaction', GetPlayerName(src), txId))
+    else
+        Notify(src, 'error', Locale('server.invalid_data'))
+    end
+end)
+
+RegisterNetEvent('muhaddil_bank:adminRemoveSharedUser', function(data)
+    local src = source
+    if not hasPermission(src) then return end
+
+    local accountId = tonumber(data.accountId)
+    local identifier = data.identifier
+    if not accountId or not identifier then return end
+
+    local affectedRows = MySQL.query.await(
+        'DELETE FROM bank_shared_access WHERE account_id = ? AND user_identifier = ?',
+        { accountId, identifier }
+    )
+
+    if affectedRows > 0 then
+        Notify(src, 'success', Locale('admin.shared_user_removed'))
+        syncPlayerAccount(accountId)
+        print(string.format('^2[ADMIN] %s removió el acceso de %s a la cuenta #%d^7', GetPlayerName(src), identifier,
+            accountId))
+    else
+        Notify(src, 'error', Locale('server.invalid_data'))
+    end
 end)
 
 if Config.AdminPanel and Config.AdminPanel.Enabled then
@@ -805,4 +944,4 @@ exports('ResetPlayerBank', function(identifier)
     return true
 end)
 
-print('^2[Bank System] Admin system loaded^7')
+print(Locale('admin.systemLoaded'))

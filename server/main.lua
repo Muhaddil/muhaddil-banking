@@ -34,7 +34,7 @@ elseif Config.FrameWork == "qb" and GetResourceState('qb-core') == 'started' the
     QBCore = exports['qb-core']:GetCoreObject()
     FrameWork = 'qb'
 else
-    print('===NO SUPPORTED FRAMEWORK FOUND===')
+    print(Locale('admin.noFramework'))
 end
 
 lib.callback.register('muhaddil_bank:getAvailableBanks', function(source)
@@ -926,8 +926,6 @@ exports('Transfer', function(source, fromAccountId, toAccountId, amount, bankLoc
     local src = source
     local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
-
-    print(fromAccountId, toAccountId, amount, bankLocation)
 
     fromAccountId      = fromAccountId
     local resolvedToId = ResolveAccountId(toAccountId)

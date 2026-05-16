@@ -38,7 +38,7 @@ elseif Config.FrameWork == "qb" and GetResourceState('qb-core') == 'started' the
     QBCore = exports['qb-core']:GetCoreObject()
     FrameWork = 'qb'
 else
-    print('===NO SUPPORTED FRAMEWORK FOUND===')
+    print(Locale('admin.noFramework'))
 end
 
 local targetSystem = nil
@@ -497,6 +497,26 @@ end)
 
 RegisterNUICallback('adminCancelRequest', function(data, cb)
     TriggerServerEvent('muhaddil_bank:adminCancelRequest', data.requestId)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminDeleteSaving', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:adminDeleteSaving', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminDeleteContact', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:adminDeleteContact', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminDeleteTransaction', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:adminDeleteTransaction', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminRemoveSharedUser', function(data, cb)
+    TriggerServerEvent('muhaddil_bank:adminRemoveSharedUser', data)
     cb('ok')
 end)
 

@@ -427,7 +427,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <div>
                                 <h3 className="text-lg font-bold text-white">{t("dashboard.yourAccounts")}</h3>
                                 <p className="text-xs text-white/40">
-                                    {accounts.length} cuenta{accounts.length !== 1 ? "s" : ""} activa{accounts.length !== 1 ? "s" : ""}
+                                    {t("dashboard.activeAccountsCount", { count: accounts.length, plural: accounts.length !== 1 ? "s" : "" })}
                                 </p>
                             </div>
                         </div>
@@ -493,8 +493,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <div>
                                 <h3 className="text-lg font-bold text-white">{t("dashboard.sharedAccounts")}</h3>
                                 <p className="text-xs text-white/40">
-                                    {sharedAccounts.length} cuenta{sharedAccounts.length !== 1 ? "s" : ""} compartida
-                                    {sharedAccounts.length !== 1 ? "s" : ""}
+                                    {t("dashboard.sharedAccountsCount", { count: sharedAccounts.length, plural: sharedAccounts.length !== 1 ? "s" : "" })}
                                 </p>
                             </div>
                         </div>
