@@ -152,7 +152,8 @@
     "red": "Red",
     "blue": "Blue",
     "green": "Green",
-    "purple": "Purple"
+    "purple": "Purple",
+    "selectTheme": "Select Theme"
   },
   "banks": {
     "bankManagement": "Bank Management",

@@ -148,7 +148,8 @@
     "red": "Rojo",
     "blue": "Azul",
     "green": "Verde",
-    "purple": "Púrpura"
+    "purple": "Púrpura",
+    "selectTheme": "Seleccionar Tema"
   },
   "banks": {
     "bankManagement": "Gestión de Bancos",

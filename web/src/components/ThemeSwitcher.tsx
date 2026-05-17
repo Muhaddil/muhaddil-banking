@@ -47,7 +47,7 @@ export const ThemeSwitcher: React.FC = () => {
       >
         <div className="p-3 border-b border-white/5">
           <p className="text-white font-medium text-sm">
-            Seleccionar Tema
+            {t("themes.selectTheme")}
           </p>
         </div>
 
