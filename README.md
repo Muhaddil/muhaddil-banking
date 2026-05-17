@@ -103,3 +103,8 @@ The script provides extensive exports for integration with other resources:
 - `exports['muhaddil-banking']:IsATMOpen()`: Returns whether the ATM interface is open.
 - `exports['muhaddil-banking']:useCheck(data)`: Triggers the logic for using a physical check.
 - `exports['muhaddil-banking']:HasStolenCard()`: Checks if the player is carrying a reported stolen card.
+
+## Support
+
+You can join the discord for support:
+https://discord.gg/V58gaTqsK8
