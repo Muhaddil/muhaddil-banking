@@ -120,27 +120,36 @@ RegisterCommand('bankremovemoney', function(source, args, rawCommand)
     local accountId = tonumber(args[1])
     local amount = tonumber(args[2])
 
-    if not accountId or not amount then
+    if not accountId or not amount or amount <= 0 then
         TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('admin.usage_removemoney'))
         return
     end
 
-    local affectedRows = MySQL.query.await('UPDATE bank_accounts SET balance = balance - ? WHERE id = ?', {
+    local account = MySQL.single.await('SELECT id, balance FROM bank_accounts WHERE id = ?', { accountId })
+    if not account then
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.account_not_found'))
+        return
+    end
+
+    local currentBalance = tonumber(account.balance) or 0
+    if currentBalance < amount then
+        TriggerClientEvent('muhaddil_bank:notify', source, 'error',
+            Locale('server.insufficient_balance') or 'Saldo insuficiente. Balance actual: $' .. currentBalance)
+        return
+    end
+
+    MySQL.query.await('UPDATE bank_accounts SET balance = balance - ? WHERE id = ?', {
         amount, accountId
     })
 
-    if affectedRows > 0 then
-        MySQL.insert.await('INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)', {
-            accountId, 'admin_withdrawal', -amount, Locale('admin.admin_withdrawal_desc')
-        })
+    MySQL.insert.await('INSERT INTO bank_transactions (account_id, type, amount, description) VALUES (?, ?, ?, ?)', {
+        accountId, 'admin_withdrawal', -amount, Locale('admin.admin_withdrawal_desc')
+    })
 
-        TriggerClientEvent('muhaddil_bank:notify', source, 'success',
-            Locale('admin.removed_money', amount, accountId))
-        syncPlayerAccount(accountId)
-        print(Locale('admin.logRemoveMoney', GetPlayerName(source), amount, accountId))
-    else
-        TriggerClientEvent('muhaddil_bank:notify', source, 'error', Locale('server.account_not_found'))
-    end
+    TriggerClientEvent('muhaddil_bank:notify', source, 'success',
+        Locale('admin.removed_money', amount, accountId))
+    syncPlayerAccount(accountId)
+    print(Locale('admin.logRemoveMoney', GetPlayerName(source), amount, accountId))
 end, false)
 
 RegisterCommand('bankloans', function(source, args, rawCommand)
@@ -650,9 +659,15 @@ RegisterNetEvent('muhaddil_bank:adminRemoveMoney', function(accountId, amount)
     amount = tonumber(amount)
     if not accountId or not amount or amount <= 0 then return end
 
-    local account = MySQL.single.await('SELECT id FROM bank_accounts WHERE id = ?', { accountId })
+    local account = MySQL.single.await('SELECT id, balance FROM bank_accounts WHERE id = ?', { accountId })
     if not account then
         return Notify(src, 'error', Locale('server.account_not_found'))
+    end
+
+    local currentBalance = tonumber(account.balance) or 0
+    if currentBalance < amount then
+        return Notify(src, 'error',
+            Locale('server.insufficient_balance') or 'Saldo insuficiente. Balance actual: $' .. currentBalance)
     end
 
     MySQL.query.await('UPDATE bank_accounts SET balance = balance - ? WHERE id = ?', { amount, accountId })

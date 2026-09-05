@@ -359,10 +359,17 @@ RegisterNetEvent('muhaddil_bank:createAccount', function(data)
     local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
 
+    local allowed, remaining = Security.CheckRateLimit(src, 'createAccount', 5)
+    if not allowed then
+        return Notify(src, 'error', Locale('server.wait_before_next_action') or 'Espera antes de crear otra cuenta')
+    end
+
     local accountName = data.accountName or data.name
-    if not accountName or accountName == "" then
+    local valid, sanitizedName = Security.ValidateString(accountName, 2, 50)
+    if not valid then
         return Notify(src, 'error', Locale('server.invalid_account_name'))
     end
+    accountName = sanitizedName
 
     local count = MySQL.scalar.await('SELECT COUNT(*) FROM bank_accounts WHERE owner = ?', { identifier })
     if count >= Config.Accounts.MaxPerPlayer then
@@ -513,40 +520,71 @@ RegisterNetEvent('muhaddil_bank:deposit', function(accountId, amount, bankLocati
     local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
 
-    if IsAccountFrozen(accountId) then
-        return Notify(src, 'error', Locale('server.account_frozen'))
+    local allowed, remaining = Security.CheckRateLimit(src, 'deposit', 2)
+    if not allowed then
+        return Notify(src, 'error', Locale('server.wait_before_next_action') or 'Espera antes de realizar otra acción')
+    end
+
+    if Security.TrackAbuse(src, 'deposit') then
+        return Notify(src, 'error', Locale('server.too_many_requests') or 'Demasiadas peticiones')
+    end
+
+    if not Security.ValidateAccountId(accountId) then
+        return Notify(src, 'error', Locale('server.invalid_account'))
     end
 
     amount = tonumber(amount)
-    if amount <= 0 then return Notify(src, 'error', Locale('server.invalid_amount')) end
+    if not amount or amount <= 0 then
+        return Notify(src, 'error', Locale('server.invalid_amount'))
+    end
+
+    amount = math.floor(amount * 100 + 0.5) / 100
 
     local account = MySQL.single.await('SELECT * FROM bank_accounts WHERE id = ?', { accountId })
     if not account then
         return Notify(src, 'error', Locale('server.account_not_found'))
     end
 
+    local isOwner = (account.owner == identifier)
+    local isShared = false
+    if not isOwner then
+        local access = MySQL.scalar.await(
+            'SELECT COUNT(*) FROM bank_shared_access WHERE account_id = ? AND user_identifier = ?',
+            { accountId, identifier }
+        )
+        isShared = tonumber(access) > 0
+    end
+    if not isOwner and not isShared then
+        return Notify(src, 'error', Locale('server.no_permission_origin'))
+    end
+
     if account.frozen and account.frozen == 1 then
         return Notify(src, 'error', Locale('server.account_frozen') or 'Cuenta congelada')
     end
 
-    if RemovePlayerMoney(src, amount) then
-        MySQL.query.await('UPDATE bank_accounts SET balance = balance + ? WHERE id = ?', { amount, accountId })
-        MySQL.insert.await(
-            'INSERT INTO bank_transactions (account_id, type, amount, description, bank_location) VALUES (?, ?, ?, ?, ?)',
-            {
-                accountId, 'deposit', amount, Locale('server.efectiveDeposit'), bankLocation
-            })
-
-        if Config.BankOwnership.Enabled and Config.BankOwnership.CommissionOnDeposit and bankLocation then
-            ApplyBankCommission(bankLocation, amount)
-        end
-
-        Notify(src, 'success', Locale('server.deposit_completed'))
-        TriggerEvent('muhaddil_bank:afterDeposit', src)
-        TriggerClientEvent('muhaddil_bank:refreshData', src)
-    else
-        Notify(src, 'error', Locale('server.insufficient_cash'))
+    if not RemovePlayerMoney(src, amount) then
+        return Notify(src, 'error', Locale('server.insufficient_cash'))
     end
+
+    local limitAllowed, limitError = Security.CheckTransactionLimits(identifier, 'deposit', amount)
+    if not limitAllowed then
+        return Notify(src, 'error', Locale(limitError) or 'Límite de transacción alcanzado')
+    end
+
+    MySQL.query.await('UPDATE bank_accounts SET balance = balance + ? WHERE id = ?', { amount, accountId })
+    MySQL.insert.await(
+        'INSERT INTO bank_transactions (account_id, type, amount, description, bank_location) VALUES (?, ?, ?, ?, ?)',
+        {
+            accountId, 'deposit', amount, Locale('server.efectiveDeposit'), bankLocation
+        })
+
+    if Config.BankOwnership.Enabled and Config.BankOwnership.CommissionOnDeposit and bankLocation then
+        ApplyBankCommission(bankLocation, amount)
+    end
+
+    Notify(src, 'success', Locale('server.deposit_completed'))
+    TriggerEvent('muhaddil_bank:afterDeposit', src)
+    TriggerClientEvent('muhaddil_bank:refreshData', src)
 end)
 
 RegisterNetEvent('muhaddil_bank:withdraw', function(accountId, amount, bankLocation)
@@ -554,14 +592,42 @@ RegisterNetEvent('muhaddil_bank:withdraw', function(accountId, amount, bankLocat
     local identifier = GetPlayerIdentifier(src)
     if not identifier then return end
 
+    local allowed, remaining = Security.CheckRateLimit(src, 'withdraw', 2)
+    if not allowed then
+        return Notify(src, 'error', Locale('server.wait_before_next_action') or 'Espera antes de realizar otra acción')
+    end
+
+    if Security.TrackAbuse(src, 'withdraw') then
+        return Notify(src, 'error', Locale('server.too_many_requests') or 'Demasiadas peticiones')
+    end
+
+    if not Security.ValidateAccountId(accountId) then
+        return Notify(src, 'error', Locale('server.invalid_account'))
+    end
+
     amount = tonumber(amount)
     if not amount or amount <= 0 then
         return Notify(src, 'error', Locale('server.invalid_amount'))
     end
 
+    amount = math.floor(amount * 100 + 0.5) / 100
+
     local account = MySQL.single.await('SELECT * FROM bank_accounts WHERE id = ?', { accountId })
     if not account then
         return Notify(src, 'error', Locale('server.account_not_found'))
+    end
+
+    local isOwner = (account.owner == identifier)
+    local isShared = false
+    if not isOwner then
+        local access = MySQL.scalar.await(
+            'SELECT COUNT(*) FROM bank_shared_access WHERE account_id = ? AND user_identifier = ?',
+            { accountId, identifier }
+        )
+        isShared = tonumber(access) > 0
+    end
+    if not isOwner and not isShared then
+        return Notify(src, 'error', Locale('server.no_permission_origin'))
     end
 
     if IsAccountFrozen(accountId) then
@@ -572,6 +638,11 @@ RegisterNetEvent('muhaddil_bank:withdraw', function(accountId, amount, bankLocat
 
     if balance < amount then
         return Notify(src, 'error', Locale('server.insufficient_balance'))
+    end
+
+    local limitAllowed, limitError = Security.CheckTransactionLimits(identifier, 'withdrawal', amount)
+    if not limitAllowed then
+        return Notify(src, 'error', Locale(limitError) or 'Límite de transacción alcanzado')
     end
 
     MySQL.query.await('UPDATE bank_accounts SET balance = balance - ? WHERE id = ?', { amount, accountId })
@@ -595,9 +666,21 @@ function requestLoan(src, data)
     local identifier = GetPlayerIdentifier(src)
     if not identifier then return false, 'No se pudo obtener el identificador del jugador.' end
 
+    local allowed, remaining = Security.CheckRateLimit(src, 'loan', 10)
+    if not allowed then
+        return false, Notify(src, 'error', Locale('server.wait_before_next_action') or 'Espera antes de solicitar otro préstamo')
+    end
+
     local amount = tonumber(data.amount)
     local installments = tonumber(data.installments)
     local loanType = data.loanType or 'personal'
+
+    if not amount or not installments then
+        return false, 'Datos inválidos'
+    end
+
+    amount = math.floor(amount * 100 + 0.5) / 100
+    installments = math.floor(installments + 0.5)
 
     local typeConfig = Config.Loans.Types and Config.Loans.Types[loanType]
     if not typeConfig then
@@ -962,6 +1045,11 @@ exports('Transfer', function(source, fromAccountId, toAccountId, amount, bankLoc
     account.balance = tonumber(account.balance)
     if not account.balance or account.balance < amount then
         return Notify(src, 'error', Locale('server.insufficient_balance'))
+    end
+
+    local limitAllowed, limitError = Security.CheckTransactionLimits(identifier, 'transfer_out', amount)
+    if not limitAllowed then
+        return Notify(src, 'error', Locale(limitError) or 'Límite de transacción alcanzado')
     end
 
     local success = MySQL.transaction.await({

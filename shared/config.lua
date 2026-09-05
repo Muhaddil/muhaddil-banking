@@ -172,6 +172,17 @@ Config.ATMs = {
     }
 }
 
+-- Transaction Limits (per player)
+Config.TransactionLimits = {
+    Enabled = false,               -- Enable daily/monthly limits
+    DailyWithdrawLimit = 500000,   -- Max cash withdrawal per day
+    DailyDepositLimit = 1000000,   -- Max cash deposit per day
+    DailyTransferLimit = 1000000,  -- Max transfer per day
+    MonthlyWithdrawLimit = 10000000,
+    MonthlyDepositLimit = 20000000,
+    MonthlyTransferLimit = 20000000,
+}
+
 Config.ATMBlip = {
     Enabled = false,            --> Disabled if using target
     Sprite = 277,               -- https://docs.fivem.net/docs/game-references/blips/

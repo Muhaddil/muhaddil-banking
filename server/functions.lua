@@ -514,10 +514,18 @@ function hasPermission(src)
 end
 
 function GenerateCardNumber()
+    local seed = os.time() + os.clock() * 1000 + math.random(1, 999999)
+    math.randomseed(seed)
+
     local cardNum = ""
     for i = 1, 16 do
         cardNum = cardNum .. tostring(math.random(0, 9))
     end
+
+    -- Ensure no duplicate with prefix pattern for uniqueness
+    local prefix = tostring(os.time()):sub(-4)
+    cardNum = prefix .. cardNum:sub(5)
+
     local exists = MySQL.scalar.await('SELECT COUNT(*) FROM bank_cards WHERE card_number = ?', { cardNum })
     if exists > 0 then
         return GenerateCardNumber()
@@ -867,3 +875,103 @@ exports('CalculateNextExecution', CalculateNextExecution)
 exports('GenerateIBAN', GenerateIBAN)
 exports('ResolveAccountId', ResolveAccountId)
 exports('GenerateCheckCode', GenerateCheckCode)
+
+exports('GetAccountBalance', function(accountId)
+    accountId = tonumber(accountId)
+    if not accountId then return nil end
+
+    local balance = MySQL.scalar.await('SELECT balance FROM bank_accounts WHERE id = ?', { accountId })
+    return balance and tonumber(balance) or nil
+end)
+
+exports('GetTransactionHistory', function(accountId, limit, offset)
+    accountId = tonumber(accountId)
+    if not accountId then return {} end
+
+    limit = math.min(tonumber(limit) or 50, 200)
+    offset = tonumber(offset) or 0
+
+    return MySQL.query.await([[
+        SELECT * FROM bank_transactions
+        WHERE account_id = ?
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
+    ]], { accountId, limit, offset }) or {}
+end)
+
+exports('GetTotalTransactions', function(accountId)
+    accountId = tonumber(accountId)
+    if not accountId then return 0 end
+
+    return tonumber(MySQL.scalar.await(
+        'SELECT COUNT(*) FROM bank_transactions WHERE account_id = ?', { accountId }
+    )) or 0
+end)
+
+exports('SearchTransactions', function(accountId, searchType, limit)
+    accountId = tonumber(accountId)
+    if not accountId then return {} end
+
+    limit = math.min(tonumber(limit) or 50, 200)
+
+    if searchType and searchType ~= '' then
+        return MySQL.query.await([[
+            SELECT * FROM bank_transactions
+            WHERE account_id = ? AND type = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+        ]], { accountId, searchType, limit }) or {}
+    end
+
+    return MySQL.query.await([[
+        SELECT * FROM bank_transactions
+        WHERE account_id = ?
+        ORDER BY created_at DESC
+        LIMIT ?
+    ]], { accountId, limit }) or {}
+end)
+
+exports('GetDailyTransactionTotal', function(accountId, transactionType)
+    accountId = tonumber(accountId)
+    if not accountId then return 0 end
+
+    local query = [[
+        SELECT COALESCE(SUM(ABS(amount)), 0) as total
+        FROM bank_transactions
+        WHERE account_id = ? AND type = ? AND created_at >= CURDATE()
+    ]]
+
+    return tonumber(MySQL.scalar.await(query, { accountId, transactionType or 'withdrawal' })) or 0
+end)
+
+exports('GetAccountSummary', function(accountId)
+    accountId = tonumber(accountId)
+    if not accountId then return nil end
+
+    local account = MySQL.single.await('SELECT id, account_name, balance, owner FROM bank_accounts WHERE id = ?', { accountId })
+    if not account then return nil end
+
+    local totalIn = tonumber(MySQL.scalar.await([[
+        SELECT COALESCE(SUM(amount), 0) FROM bank_transactions
+        WHERE account_id = ? AND amount > 0
+    ]], { accountId })) or 0
+
+    local totalOut = tonumber(MySQL.scalar.await([[
+        SELECT COALESCE(SUM(ABS(amount)), 0) FROM bank_transactions
+        WHERE account_id = ? AND amount < 0
+    ]], { accountId })) or 0
+
+    local txCount = tonumber(MySQL.scalar.await(
+        'SELECT COUNT(*) FROM bank_transactions WHERE account_id = ?', { accountId }
+    )) or 0
+
+    return {
+        id = account.id,
+        name = account.account_name,
+        balance = tonumber(account.balance),
+        owner = account.owner,
+        totalIncoming = totalIn,
+        totalOutgoing = totalOut,
+        transactionCount = txCount,
+    }
+end)
