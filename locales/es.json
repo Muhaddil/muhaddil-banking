@@ -683,6 +683,7 @@
     "admin_deposit_desc": "Depósito administrativo",
     "admin_withdrawal_desc": "Retiro administrativo",
     "admin_freeze_desc": "Cuenta congelada por administrador",
+    "name": "Nombre",
     "owner": "Dueño",
     "balance": "Saldo",
     "created_at": "Creado el",

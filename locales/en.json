@@ -683,6 +683,7 @@
     "admin_deposit_desc": "Administrative deposit",
     "admin_withdrawal_desc": "Administrative withdrawal",
     "admin_freeze_desc": "Account frozen by administrator",
+    "name": "Name",
     "owner": "Owner",
     "balance": "Balance",
     "created_at": "Created at",
